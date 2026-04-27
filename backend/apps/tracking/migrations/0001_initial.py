@@ -1,0 +1,78 @@
+﻿from datetime import date
+
+from django.conf import settings
+from django.db import migrations, models
+import django.db.models.deletion
+
+
+class Migration(migrations.Migration):
+    initial = True
+
+    dependencies = [
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name="Session",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "goal_type",
+                    models.CharField(
+                        choices=[("kanji", "Kanji"), ("vocab", "Vocabulary"), ("listening", "Listening"), ("mixed", "Mixed")],
+                        default="mixed",
+                        max_length=20,
+                    ),
+                ),
+                ("goal_target", models.PositiveIntegerField(default=20)),
+                ("progress_count", models.PositiveIntegerField(default=0)),
+                ("started_at", models.DateTimeField(auto_now_add=True)),
+                ("ended_at", models.DateTimeField(blank=True, null=True)),
+                ("duration_seconds", models.PositiveIntegerField(default=0)),
+                ("reflection", models.TextField(blank=True)),
+                ("summary", models.JSONField(blank=True, default=dict)),
+                (
+                    "user",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="sessions", to=settings.AUTH_USER_MODEL),
+                ),
+            ],
+        ),
+        migrations.CreateModel(
+            name="UserProgress",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "item_type",
+                    models.CharField(choices=[("kanji", "Kanji"), ("vocab", "Vocabulary"), ("listening", "Listening"), ("test", "Test")], max_length=20),
+                ),
+                ("item_id", models.PositiveBigIntegerField()),
+                ("accuracy", models.FloatField(default=0.0)),
+                ("attempts", models.PositiveIntegerField(default=0)),
+                ("correct_attempts", models.PositiveIntegerField(default=0)),
+                ("repetitions", models.PositiveIntegerField(default=0)),
+                ("interval_days", models.PositiveIntegerField(default=1)),
+                ("ease_factor", models.FloatField(default=2.5)),
+                ("last_reviewed", models.DateTimeField(blank=True, null=True)),
+                ("next_review_date", models.DateField(default=date.today)),
+                ("last_result_correct", models.BooleanField(default=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="progress_items", to=settings.AUTH_USER_MODEL),
+                ),
+            ],
+            options={
+                "unique_together": {("user", "item_type", "item_id")},
+            },
+        ),
+        migrations.AddIndex(
+            model_name="userprogress",
+            index=models.Index(fields=["user", "next_review_date"], name="tracking_use_user_id_34f706_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="userprogress",
+            index=models.Index(fields=["user", "item_type"], name="tracking_use_user_id_6f86b4_idx"),
+        ),
+    ]

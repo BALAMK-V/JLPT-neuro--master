@@ -1,0 +1,25 @@
+﻿{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <div id="content" class="content">
+    <h1>{{ title }}</h1>
+
+    {% if help_text %}
+      <div class="module" style="margin-bottom: 14px; padding: 12px;">
+        <div style="color: rgba(255,255,255,0.75);">{{ help_text|linebreaksbr }}</div>
+      </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="module" style="padding: 12px;">
+      {% csrf_token %}
+      <fieldset class="module aligned">
+        {{ form.as_p }}
+      </fieldset>
+      <div class="submit-row">
+        <input type="submit" value="Upload" class="default" />
+        <a class="button" href="../">Back</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

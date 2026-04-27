@@ -1,0 +1,70 @@
+front,back,tags,kanji_character,vocab_word,vocab_reading
+政,"politics; government\nonyomi: セイ","kanji;N2",政,,
+経,"manage; pass through\nonyomi: ケイ\nkunyomi: へる","kanji;N2",経,,
+済,"finish; settle\nonyomi: サイ\nkunyomi: すむ","kanji;N2",済,,
+務,"duty; task\nonyomi: ム\nkunyomi: つとめる","kanji;N2",務,,
+責,"responsibility; blame\nonyomi: セキ\nkunyomi: せめる","kanji;N2",責,,
+権,"authority; rights\nonyomi: ケン","kanji;N2",権,,
+義,"justice; obligation\nonyomi: ギ","kanji;N2",義,,
+証,"evidence; proof\nonyomi: ショウ\nkunyomi: あかし","kanji;N2",証,,
+解,"solve; understand\nonyomi: カイ\nkunyomi: とく","kanji;N2",解,,
+確,"certain; sure\nonyomi: カク\nkunyomi: たしか","kanji;N2",確,,
+場合,"case; situation\nreading: ばあい","vocab;N2",,場合,ばあい
+増加,"increase\nreading: ぞうか","vocab;N2",,増加,ぞうか
+減少,"decrease\nreading: げんしょう","vocab;N2",,減少,げんしょう
+影響,"influence\nreading: えいきょう","vocab;N2",,影響,えいきょう
+原因,"cause\nreading: げんいん","vocab;N2",,原因,げんいん
+結果,"result\nreading: けっか","vocab;N2",,結果,けっか
+効果,"effect\nreading: こうか","vocab;N2",,効果,こうか
+目的,"purpose\nreading: もくてき","vocab;N2",,目的,もくてき
+手段,"means\nreading: しゅだん","vocab;N2",,手段,しゅだん
+状況,"situation\nreading: じょうきょう","vocab;N2",,状況,じょうきょう
+環境,"environment\nreading: かんきょう","vocab;N2",,環境,かんきょう
+関係,"relationship\nreading: かんけい","vocab;N2",,関係,かんけい
+内容,"content\nreading: ないよう","vocab;N2",,内容,ないよう
+情報,"information\nreading: じょうほう","vocab;N2",,情報,じょうほう
+技術,"technology\nreading: ぎじゅつ","vocab;N2",,技術,ぎじゅつ
+経験,"experience\nreading: けいけん","vocab;N2",,経験,けいけん
+知識,"knowledge\nreading: ちしき","vocab;N2",,知識,ちしき
+理解,"understanding\nreading: りかい","vocab;N2",,理解,りかい
+説明,"explanation\nreading: せつめい","vocab;N2",,説明,せつめい
+発表,"presentation\nreading: はっぴょう","vocab;N2",,発表,はっぴょう
+提案,"proposal\nreading: ていあん","vocab;N2",,提案,ていあん
+選択,"selection\nreading: せんたく","vocab;N2",,選択,せんたく
+決定,"decision\nreading: けってい","vocab;N2",,決定,けってい
+判断,"judgment\nreading: はんだん","vocab;N2",,判断,はんだん
+確認,"confirmation\nreading: かくにん","vocab;N2",,確認,かくにん
+準備,"preparation\nreading: じゅんび","vocab;N2",,準備,じゅんび
+対応,"handling\nreading: たいおう","vocab;N2",,対応,たいおう
+解決,"solution\nreading: かいけつ","vocab;N2",,解決,かいけつ
+発展,"development\nreading: はってん","vocab;N2",,発展,はってん
+成長,"growth\nreading: せいちょう","vocab;N2",,成長,せいちょう
+変化,"change\nreading: へんか","vocab;N2",,変化,へんか
+管理,"management\nreading: かんり","vocab;N2",,管理,かんり
+経営,"business management\nreading: けいえい","vocab;N2",,経営,けいえい
+実施,"implementation\nreading: じっし","vocab;N2",,実施,じっし
+利用,"usage\nreading: りよう","vocab;N2",,利用,りよう
+提供,"provide\nreading: ていきょう","vocab;N2",,提供,ていきょう
+要求,"demand\nreading: ようきゅう","vocab;N2",,要求,ようきゅう
+条件,"condition\nreading: じょうけん","vocab;N2",,条件,じょうけん
+制限,"restriction\nreading: せいげん","vocab;N2",,制限,せいげん
+許可,"permission\nreading: きょか","vocab;N2",,許可,きょか
+禁止,"prohibition\nreading: きんし","vocab;N2",,禁止,きんし
+義務,"duty\nreading: ぎむ","vocab;N2",,義務,ぎむ
+責任,"responsibility\nreading: せきにん","vocab;N2",,責任,せきにん
+権利,"rights\nreading: けんり","vocab;N2",,権利,けんり
+〜に違いない,"must be; surely","grammar;N2",,,
+〜わけではない,"it does not mean that","grammar;N2",,,
+〜わけがない,"there is no way","grammar;N2",,,
+〜ことになる,"it turns out that","grammar;N2",,,
+〜ことにする,"decide to do","grammar;N2",,,
+〜ようにする,"make an effort to","grammar;N2",,,
+〜おそれがある,"there is a risk that","grammar;N2",,,
+〜に対して,"toward; against","grammar;N2",,,
+〜に関して,"regarding","grammar;N2",,,
+〜に基づいて,"based on","grammar;N2",,,
+〜を通じて,"through; via","grammar;N2",,,
+〜において,"in; at (formal)","grammar;N2",,,
+〜に伴って,"along with","grammar;N2",,,
+〜に加えて,"in addition to","grammar;N2",,,
+〜に比べて,"compared to","grammar;N2",,,

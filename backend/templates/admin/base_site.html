@@ -1,0 +1,20 @@
+﻿{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}JLPT Neuro Master Admin{% endblock %}
+
+{% block branding %}
+  <div id="site-name">
+    <a href="{% url 'admin:index' %}">JLPT Neuro Master</a>
+    <span style="margin-left:10px; font-size:12px; opacity:.75;">JLPT N5–N1 • Neurodivergent-friendly</span>
+    {% url 'admin:users_user_god_mode' as god_mode_url %}
+    {% if god_mode_url %}
+      <a class="button" href="{{ god_mode_url }}" style="margin-left:12px; padding:6px 10px;">God Mode</a>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin_theme.css' %}">
+{% endblock %}

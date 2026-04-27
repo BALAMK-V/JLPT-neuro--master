@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: jlpt_neuro_master
+      POSTGRES_USER: jlpt
+      POSTGRES_PASSWORD: jlpt
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DJANGO_SECRET_KEY: dev-only-change-me
+      DJANGO_DEBUG: "1"
+      DJANGO_ALLOWED_HOSTS: "127.0.0.1,localhost"
+      DATABASE_URL: "postgres://jlpt:jlpt@db:5432/jlpt_neuro_master"
+      CORS_ALLOWED_ORIGINS: "http://127.0.0.1:5173,http://localhost:5173"
+      CSRF_TRUSTED_ORIGINS: "http://127.0.0.1:5173,http://localhost:5173"
+      USE_S3: "0"
+      RUN_SEED: "1"
+      DEFAULT_SEED_PASSWORD: "Test@123"
+      DEFAULT_ADMIN_USERNAME: "admin"
+      DEFAULT_USER_USERNAME: "demo"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./backend/media:/app/media
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      VITE_API_BASE: "http://127.0.0.1:8000/api"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

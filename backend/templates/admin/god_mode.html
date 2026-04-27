@@ -1,0 +1,96 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:auth_user_changelist' %}">Users</a>
+    &rsaquo; God Mode
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="godmode">
+    <section class="godmode__hero">
+      <div>
+        <h1>God Mode</h1>
+        <p>Manage learner profiles, sessions, decks, notes, progress, and due queues from one focused admin workflow.</p>
+      </div>
+      <a class="button" href="{% url 'admin:auth_user_changelist' %}">Back to users</a>
+    </section>
+
+    <section class="godmode__stats" aria-label="Admin summary">
+      <div><strong>{{ summary.users }}</strong><span>Users</span></div>
+      <div><strong>{{ summary.profiles }}</strong><span>Profiles</span></div>
+      <div><strong>{{ summary.progress }}</strong><span>Progress rows</span></div>
+      <div><strong>{{ summary.sessions }}</strong><span>Sessions</span></div>
+      <div><strong>{{ summary.decks }}</strong><span>Decks</span></div>
+      <div><strong>{{ summary.notes }}</strong><span>Notes</span></div>
+      <div><strong>{{ summary.neuro_profiles }}</strong><span>Analyses</span></div>
+      <div><strong>{{ summary.answers }}</strong><span>Answers</span></div>
+    </section>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form.media }}
+      {% if form.non_field_errors %}
+        <div class="errornote">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="godmode__grid">
+        <fieldset class="module aligned godmode__panel godmode__panel--wide">
+          <h2>1. Select learners</h2>
+          <div class="form-row">
+            {{ form.users.errors }}
+            {{ form.users }}
+            <p class="help">{{ form.users.help_text }}</p>
+          </div>
+        </fieldset>
+
+        <fieldset class="module aligned godmode__panel">
+          <h2>2. Profile changes</h2>
+          {% for field in form %}
+            {% if field.name in "jlpt_level learning_type session_minutes_preference reminder_interval_minutes daily_goal_new_items reminders_enabled" %}
+              <div class="form-row">
+                {{ field.errors }}
+                {{ field.label_tag }} {{ field }}
+                {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </fieldset>
+
+        <fieldset class="module aligned godmode__panel">
+          <h2>3. Add learning objects</h2>
+          {% for field in form %}
+            {% if field.name in "create_session session_goal_type session_goal_target create_deck deck_name deck_type deck_level deck_locked note_content" %}
+              <div class="form-row">
+                {{ field.errors }}
+                {{ field.label_tag }} {{ field }}
+                {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </fieldset>
+
+        <fieldset class="module aligned godmode__panel">
+          <h2>4. Progress operations</h2>
+          {% for field in form %}
+            {% if field.name in "reset_progress make_cards_due_now" %}
+              <div class="form-row">
+                {{ field.errors }}
+                {{ field.label_tag }} {{ field }}
+                {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </fieldset>
+      </div>
+
+      <div class="submit-row">
+        <input type="submit" class="default" value="Apply changes">
+        <a class="button cancel-link" href="{% url 'admin:auth_user_changelist' %}">Cancel</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

@@ -1,0 +1,4 @@
+﻿audio_file,section,question_type,audio_text,question,option_a,option_b,option_c,option_d,answer,explanation,jlpt_level
+n2_kadai_01.wav,kadai,gist,"（音声）女性：来週から営業時間が変わります。","このお知らせの内容は？","営業時間が変わる","場所が変わる","値段が上がる","新しい店ができる",A,"来週から営業時間が変更。",N2
+n2_point_01.wav,point,detail,"（音声）男性：集合は9時、場所は駅の前です。","集合時間は？","9時","10時","11時","12時",A,"集合時間=9時。",N2
+n2_sokuji_01.wav,sokuji,response,"（音声）すみません、今よろしいですか。","どう返事するのが自然？","はい、いいですよ。","いいえ、知らない。","たぶん、無理です。","また昨日。",A,"依頼や呼びかけへの自然な返答。",N2

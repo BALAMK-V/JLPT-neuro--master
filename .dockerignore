@@ -1,0 +1,15 @@
+﻿# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Django
+*.sqlite3
+backend/media/
+backend/staticfiles/
+
+# Node
+frontend/node_modules/
+
+# Misc
+.git/

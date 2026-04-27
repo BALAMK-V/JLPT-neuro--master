@@ -1,0 +1,5 @@
+﻿jlpt_level,section,question_type,context_text_jp,prompt,option_a,option_b,option_c,option_d,answer,explanation,tags
+N2,bunpo_form,fill_blank,"会議は予定より早く終わった。","会議が早く終わったので、残業しない（　）なった。","ことに","ことが","ことを","ことは",A,"〜ことになる = it ended up that...","koto_ni_naru"
+N2,bunpo_form,fill_blank,"来月から毎朝ジョギングする。","健康のために、毎朝走る（　）した。","ことに","ことを","ことが","ことは",A,"〜ことにする = decide to...","koto_ni_suru"
+N2,bunpo_form,choose,"今は忙しい。","今日は手伝う（　）。","わけにはいかない","ことはない","ようにする","にちがいない",A,"〜わけにはいかない = can’t do","wake_niwa_ikanai"
+N2,text_grammar,choose,"電車が遅れているため、到着が30分ほど遅れる見込みです。","最も近い意味はどれですか。","30分早く着く","30分ぐらい遅くなる","30分だけ止まる","30分で着く",B,"到着が遅れる見込み = likely to arrive late","okure_mikomi"

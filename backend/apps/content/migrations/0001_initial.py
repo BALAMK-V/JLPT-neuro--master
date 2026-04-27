@@ -1,0 +1,70 @@
+﻿from django.db import migrations, models
+import django.db.models.deletion
+
+
+class Migration(migrations.Migration):
+    initial = True
+
+    dependencies = []
+
+    operations = [
+        migrations.CreateModel(
+            name="Kanji",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("character", models.CharField(max_length=1, unique=True)),
+                ("onyomi", models.CharField(blank=True, max_length=200)),
+                ("kunyomi", models.CharField(blank=True, max_length=200)),
+                ("meaning_en", models.CharField(max_length=255)),
+                (
+                    "jlpt_level",
+                    models.CharField(
+                        choices=[("N5", "N5"), ("N4", "N4"), ("N3", "N3"), ("N2", "N2"), ("N1", "N1")],
+                        default="N2",
+                        max_length=2,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+            ],
+        ),
+        migrations.CreateModel(
+            name="Vocabulary",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("word", models.CharField(max_length=120)),
+                ("reading", models.CharField(blank=True, max_length=120)),
+                ("meaning_en", models.CharField(max_length=255)),
+                (
+                    "jlpt_level",
+                    models.CharField(
+                        choices=[("N5", "N5"), ("N4", "N4"), ("N3", "N3"), ("N2", "N2"), ("N1", "N1")],
+                        default="N2",
+                        max_length=2,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+            ],
+            options={
+                "indexes": [models.Index(fields=["jlpt_level"], name="content_voc_jlpt_le_6f95d7_idx"), models.Index(fields=["word"], name="content_voc_word_4d8a8e_idx")],
+            },
+        ),
+        migrations.CreateModel(
+            name="KanjiExample",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("sentence_jp", models.TextField()),
+                ("sentence_en", models.TextField(blank=True)),
+                (
+                    "kanji",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="examples", to="content.kanji"),
+                ),
+            ],
+        ),
+        migrations.AddField(
+            model_name="vocabulary",
+            name="related_kanji",
+            field=models.ManyToManyField(blank=True, related_name="vocabulary", to="content.kanji"),
+        ),
+    ]
