@@ -8,3 +8,13 @@ django-filter>=24.2
 django-storages[s3]>=1.14
 boto3>=1.34
 
+# OCR dependencies (installed via Dockerfile system packages + pip)
+Pillow>=10.0
+pytesseract>=0.3.10
+pdf2image>=1.16
+# Optional: uncomment for Google Cloud Vision (higher-accuracy Japanese OCR)
+# google-cloud-vision>=3.4
+
+# AI question cleaning (set ANTHROPIC_API_KEY in .env to enable)
+anthropic>=0.30.0
+

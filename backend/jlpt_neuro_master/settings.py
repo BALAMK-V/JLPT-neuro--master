@@ -40,6 +40,8 @@ INSTALLED_APPS = [
       "apps.notes.apps.NotesConfig",
       "apps.neuro.apps.NeuroConfig",
       "apps.tracking.apps.TrackingConfig",
+      "apps.jlpt_exam.apps.JlptExamConfig",
+      "apps.ocr.apps.OcrConfig",
   ]
 
 MIDDLEWARE = [
@@ -135,6 +137,8 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
+
+ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", "") or ""
 
 USE_S3 = env("USE_S3", "0") == "1"
 if USE_S3:

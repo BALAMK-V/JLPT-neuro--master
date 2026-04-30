@@ -10,6 +10,8 @@ export type RouteKey =
   | "grammar"
   | "flashcards"
   | "tests"
+  | "jlptExam"
+  | "paperUpload"
   | "notes"
   | "sessions"
   | "appearance"
@@ -32,6 +34,8 @@ export const ROUTES: RouteDef[] = [
   { key: "reading", label: "Reading", description: "Reading comprehension patterns" },
   { key: "grammar", label: "Grammar", description: "Grammar patterns + drills" },
   { key: "tests", label: "Tests", description: "JLPT-style quizzes + mocks" },
+  { key: "jlptExam", label: "JLPT Exam", description: "Full official-style exam simulation N5–N1" },
+  { key: "paperUpload", label: "Upload Paper", description: "Scan & OCR a question paper to import questions" },
   { key: "notes", label: "Notes", description: "Quick, context, session notes" },
   { key: "sessions", label: "Sessions", description: "Goals, progress, summaries" },
   { key: "appearance", label: "Appearance & Personalization", description: "Theme, layout, companion" },

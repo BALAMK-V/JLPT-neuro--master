@@ -17,8 +17,11 @@ export function SideMenu({
     <>
       <aside className={open ? "sidebar sidebar--open" : "sidebar"} aria-label="Side menu">
         <div className="sidebar__brand">
-          <div className="sidebar__title">JLPT Neuro</div>
-          <div className="sidebar__subtitle">JLPT N5–N1</div>
+          <img src="/app_icon.png" alt="JLPT Neuro Master" className="sidebar__icon" />
+          <div>
+            <div className="sidebar__title">JLPT Neuro</div>
+            <div className="sidebar__subtitle">JLPT N5–N1</div>
+          </div>
         </div>
 
         <nav className="nav" aria-label="Navigation">

@@ -1,0 +1,142 @@
+import django.db.models.deletion
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+        ("content", "0001_initial"),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name="JLPTExam",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("level", models.CharField(choices=[("N5", "N5"), ("N4", "N4"), ("N3", "N3"), ("N2", "N2"), ("N1", "N1")], default="N3", max_length=2)),
+                ("title", models.CharField(max_length=255)),
+                ("description", models.TextField(blank=True)),
+                ("section_type", models.CharField(choices=[("language_knowledge", "Language Knowledge (Vocab + Grammar)"), ("reading", "Reading"), ("listening", "Listening"), ("full", "Full Exam")], default="full", max_length=30)),
+                ("duration_minutes", models.PositiveIntegerField(default=105)),
+                ("is_official_style", models.BooleanField(default=True)),
+                ("is_published", models.BooleanField(default=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("created_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="created_exams", to=settings.AUTH_USER_MODEL)),
+            ],
+            options={"ordering": ["-created_at"]},
+        ),
+        migrations.CreateModel(
+            name="ExamQuestion",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("order", models.PositiveIntegerField(default=0)),
+                ("section", models.CharField(choices=[("vocabulary", "Vocabulary"), ("grammar", "Grammar"), ("reading", "Reading"), ("listening", "Listening")], max_length=20)),
+                ("question_type", models.CharField(choices=[("multiple_choice", "Multiple Choice"), ("image_based", "Image-Based"), ("audio_based", "Audio-Based"), ("fill_blank", "Fill in the Blank"), ("sentence_arrange", "Sentence Arrangement")], default="multiple_choice", max_length=30)),
+                ("question_text", models.TextField()),
+                ("question_image", models.ImageField(blank=True, null=True, upload_to="exam/questions/images/")),
+                ("audio_file", models.FileField(blank=True, null=True, upload_to="exam/questions/audio/")),
+                ("passage_text", models.TextField(blank=True)),
+                ("points", models.PositiveIntegerField(default=1)),
+                ("explanation", models.TextField(blank=True)),
+                ("exam", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="questions", to="jlpt_exam.jlptexam")),
+            ],
+            options={"ordering": ["order", "id"]},
+        ),
+        migrations.CreateModel(
+            name="ExamOption",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("label", models.CharField(max_length=5)),
+                ("text", models.TextField(blank=True)),
+                ("image", models.ImageField(blank=True, null=True, upload_to="exam/options/images/")),
+                ("is_correct", models.BooleanField(default=False)),
+                ("question", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="options", to="jlpt_exam.examquestion")),
+            ],
+            options={"ordering": ["label"]},
+        ),
+        migrations.CreateModel(
+            name="UserExamSession",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("status", models.CharField(choices=[("in_progress", "In Progress"), ("submitted", "Submitted"), ("abandoned", "Abandoned")], default="in_progress", max_length=20)),
+                ("started_at", models.DateTimeField(auto_now_add=True)),
+                ("submitted_at", models.DateTimeField(blank=True, null=True)),
+                ("time_remaining_seconds", models.IntegerField(default=0)),
+                ("exam", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="user_sessions", to="jlpt_exam.jlptexam")),
+                ("user", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="exam_sessions", to=settings.AUTH_USER_MODEL)),
+            ],
+        ),
+        migrations.CreateModel(
+            name="UserQuestionAnswer",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("text_answer", models.TextField(blank=True)),
+                ("is_correct", models.BooleanField(default=False)),
+                ("time_taken_seconds", models.PositiveIntegerField(default=0)),
+                ("answered_at", models.DateTimeField(auto_now_add=True)),
+                ("question", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="user_answers", to="jlpt_exam.examquestion")),
+                ("selected_option", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="selected_by", to="jlpt_exam.examoption")),
+                ("session", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="answers", to="jlpt_exam.userexamsession")),
+            ],
+        ),
+        migrations.CreateModel(
+            name="ExamResult",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("total_questions", models.PositiveIntegerField(default=0)),
+                ("correct_answers", models.PositiveIntegerField(default=0)),
+                ("score_percentage", models.FloatField(default=0.0)),
+                ("time_taken_seconds", models.PositiveIntegerField(default=0)),
+                ("section_scores", models.JSONField(default=dict)),
+                ("weak_areas", models.JSONField(default=list)),
+                ("study_suggestions", models.JSONField(default=list)),
+                ("passed", models.BooleanField(default=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("exam", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="results", to="jlpt_exam.jlptexam")),
+                ("session", models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name="result", to="jlpt_exam.userexamsession")),
+                ("user", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="exam_results", to=settings.AUTH_USER_MODEL)),
+            ],
+            options={"ordering": ["-created_at"]},
+        ),
+        migrations.AddIndex(
+            model_name="jlptexam",
+            index=models.Index(fields=["level", "is_published"], name="jlpt_exam_j_level_pub_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="examquestion",
+            index=models.Index(fields=["exam", "section"], name="jlpt_exam_eq_exam_sec_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="examquestion",
+            index=models.Index(fields=["exam", "order"], name="jlpt_exam_eq_exam_ord_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="userexamsession",
+            index=models.Index(fields=["user", "status"], name="jlpt_exam_ses_user_stat_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="userexamsession",
+            index=models.Index(fields=["user", "exam"], name="jlpt_exam_ses_user_exam_idx"),
+        ),
+        migrations.AlterUniqueTogether(
+            name="userquestionanswer",
+            unique_together={("session", "question")},
+        ),
+        migrations.AddIndex(
+            model_name="userquestionanswer",
+            index=models.Index(fields=["session", "question"], name="jlpt_exam_uqa_ses_q_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="examresult",
+            index=models.Index(fields=["user", "exam"], name="jlpt_exam_res_user_exam_idx"),
+        ),
+        migrations.AddIndex(
+            model_name="examresult",
+            index=models.Index(fields=["user", "created_at"], name="jlpt_exam_res_user_ca_idx"),
+        ),
+    ]

@@ -5,6 +5,7 @@ WORKDIR /app
 COPY frontend/package.json /app/package.json
 RUN npm install
 
+COPY frontend/package-lock.json /app/package-lock.json
 COPY frontend/ /app/
 
 EXPOSE 5173

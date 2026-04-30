@@ -3,19 +3,20 @@ import { DashboardPage } from "../pages/DashboardPage";
 import { AppearanceSettingsPage } from "../pages/AppearanceSettingsPage";
 import { FlashcardsPage } from "../pages/FlashcardsPage";
 import { ImportsPage } from "../pages/ImportsPage";
+import { JLPTExamPage } from "../pages/JLPTExamPage";
 import { KanjiPage } from "../pages/KanjiPage";
 import { ListeningPage } from "../pages/ListeningPage";
 import { ReadingPage } from "../pages/ReadingPage";
 import { GrammarPage } from "../pages/GrammarPage";
 import { NotesPage } from "../pages/NotesPage";
 import { NeuroAnalysisPage } from "../pages/NeuroAnalysisPage";
+import { PaperUploadPage } from "../pages/PaperUploadPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { SessionsPage } from "../pages/SessionsPage";
 import { TestsPage } from "../pages/TestsPage";
 import { VocabPage } from "../pages/VocabPage";
 import { LoginForm } from "../components/LoginForm";
 import { SideMenu } from "../components/SideMenu";
-import { ProgressBar } from "../components/ProgressBar";
 import { QuickNoteButton } from "../components/QuickNoteButton";
 import { FocusAudioWidget } from "../components/FocusAudioWidget";
 import { CompanionWidget } from "../components/companion/CompanionWidget";
@@ -52,6 +53,10 @@ function AppShell() {
         return <GrammarPage />;
       case "tests":
         return <TestsPage />;
+      case "jlptExam":
+        return <JLPTExamPage />;
+      case "paperUpload":
+        return <PaperUploadPage />;
       case "notes":
         return <NotesPage />;
       case "sessions":
@@ -117,7 +122,6 @@ function AppShell() {
           </div>
         </header>
 
-        <ProgressBar />
         <main className="content">{page}</main>
         <FocusAudioWidget />
         <CompanionWidget />
