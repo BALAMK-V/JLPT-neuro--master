@@ -16,7 +16,12 @@ export type RouteKey =
   | "sessions"
   | "appearance"
   | "profile"
-  | "neuroAnalysis";
+  | "neuroAnalysis"
+  | "grammarCheck"
+  | "aiExamGen"
+  | "speakingMode"
+  | "sentenceMining"
+  | "multiplayerQuiz";
 
 export type RouteDef = {
   key: RouteKey;
@@ -33,6 +38,11 @@ export const ROUTES: RouteDef[] = [
   { key: "listening", label: "Listening", description: "Audio + MCQ practice" },
   { key: "reading", label: "Reading", description: "Reading comprehension patterns" },
   { key: "grammar", label: "Grammar", description: "Grammar patterns + drills" },
+  { key: "grammarCheck", label: "AI Grammar Check", description: "Type a Japanese sentence and get instant AI feedback" },
+  { key: "aiExamGen", label: "AI Exam Generator", description: "Let Claude generate a fresh JLPT practice exam" },
+  { key: "speakingMode", label: "Speaking Practice", description: "Speak vocabulary answers — browser speech recognition" },
+  { key: "sentenceMining", label: "Sentence Miner", description: "Paste Japanese text — Claude extracts unknown words as flashcards" },
+  { key: "multiplayerQuiz", label: "Multiplayer Quiz", description: "Race friends on JLPT questions in real-time" },
   { key: "tests", label: "Tests", description: "JLPT-style quizzes + mocks" },
   { key: "jlptExam", label: "JLPT Exam", description: "Full official-style exam simulation N5–N1" },
   { key: "paperUpload", label: "Upload Paper", description: "Scan & OCR a question paper to import questions" },

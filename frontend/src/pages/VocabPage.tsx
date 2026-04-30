@@ -14,6 +14,8 @@ export function VocabPage() {
   const [level, setLevel] = useState<string>(me?.profile.jlpt_level ?? "N2");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showFurigana, setShowFurigana] = useState(false);
+  const [sortBy, setSortBy] = useState<"default" | "frequency">("default");
 
   const search = useMemo(() => query.trim(), [query]);
 
@@ -24,12 +26,13 @@ export function VocabPage() {
     const qs = new URLSearchParams();
     if (level) qs.set("jlpt_level", level);
     if (search) qs.set("search", search);
+    if (sortBy === "frequency") qs.set("ordering", "frequency_rank");
 
     api<Paginated<Vocab>>(`/vocab/?${qs.toString()}`)
       .then((data) => setItems(data.results))
       .catch((e) => setError(String(e.message ?? e)))
       .finally(() => setLoading(false));
-  }, [search, level]);
+  }, [search, level, sortBy]);
 
   return (
     <div>
@@ -60,12 +63,31 @@ export function VocabPage() {
         ) : null}
       </div>
 
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 8 }}>
+        <select
+          className="field"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as "default" | "frequency")}
+          style={{ maxWidth: 180, fontSize: 12 }}
+        >
+          <option value="default">Sort: Default</option>
+          <option value="frequency">Sort: Most Common First</option>
+        </select>
+        <button
+          className="btn"
+          onClick={() => setShowFurigana((v) => !v)}
+          style={{ fontSize: 12 }}
+        >
+          {showFurigana ? "Hide Furigana" : "Show Furigana"}
+        </button>
+      </div>
+
       {loading ? <div className="card">Loading...</div> : null}
       {error ? <div className="card">Error: {error}</div> : null}
 
       <div className="grid">
         {items.map((v) => (
-          <VocabCard key={v.id} vocab={v} />
+          <VocabCard key={v.id} vocab={v} showFurigana={showFurigana} />
         ))}
         {!loading && !error && items.length === 0 ? (
           <div className="card" style={{ gridColumn: "span 12" }}>

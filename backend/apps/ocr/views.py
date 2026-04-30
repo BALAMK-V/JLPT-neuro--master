@@ -96,8 +96,12 @@ class QuestionPaperUploadView(APIView):
             status=QuestionPaper.Status.PROCESSING,
         )
 
-        thread = threading.Thread(target=_run_ocr_background, args=(paper.pk,), daemon=True)
-        thread.start()
+        try:
+            from .tasks import run_ocr_task
+            run_ocr_task.delay(paper.pk)
+        except Exception:
+            thread = threading.Thread(target=_run_ocr_background, args=(paper.pk,), daemon=True)
+            thread.start()
 
         return Response(QuestionPaperSerializer(paper).data, status=status.HTTP_201_CREATED)
 

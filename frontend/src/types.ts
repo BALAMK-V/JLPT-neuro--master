@@ -47,6 +47,7 @@ export type NeuroProfileResult = {
   };
   created_at: string;
   updated_at: string;
+  days_since_assessment?: number;
 };
 
 export type UserProfile = {
@@ -114,9 +115,11 @@ export type Note = {
 export type Dashboard = {
   avg_accuracy: number;
   due_reviews: number;
+  flash_due_count: number;
   weak_areas: Array<{ item_type: string; avg: number; count: number }>;
   streak_days: number;
   minutes_spent_today: number;
+  top_unknown_words: Array<{ id: number; word: string; reading: string; meaning_en: string; frequency_rank: number }>;
   recommendations: Array<Record<string, unknown>>;
 };
 
@@ -136,6 +139,7 @@ export type Vocab = {
   reading: string;
   meaning_en: string;
   jlpt_level: "N5" | "N4" | "N3" | "N2" | "N1";
+  frequency_rank?: number | null;
   related_kanji_ids?: number[];
 };
 
@@ -253,6 +257,7 @@ export type FlashDeck = {
   jlpt_level: "N5" | "N4" | "N3" | "N2" | "N1";
   system_key: string;
   is_locked: boolean;
+  srs_algo: "sm2" | "fsrs";
   due_count: number;
   total_cards: number;
   created_at: string;
@@ -277,6 +282,18 @@ export type FlashCard = {
   last_reviewed: string | null;
   lapses: number;
   last_rating: string;
+  fsrs_stability: number | null;
+  fsrs_difficulty: number | null;
+  fsrs_state: string;
   created_at: string;
   updated_at: string;
+};
+
+export type ExamHistoryEntry = {
+  id: number;
+  exam_title: string;
+  score_percentage: number;
+  section_scores: Record<string, { total: number; correct: number; percentage: number }>;
+  passed: boolean;
+  created_at: string;
 };

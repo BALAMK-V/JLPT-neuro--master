@@ -42,4 +42,4 @@ class VocabularySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vocabulary
-        fields = ["id", "word", "reading", "meaning_en", "jlpt_level", "related_kanji_ids"]
+        fields = ["id", "word", "reading", "meaning_en", "jlpt_level", "frequency_rank", "related_kanji_ids"]

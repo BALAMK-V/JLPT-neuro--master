@@ -15,12 +15,17 @@ class Deck(models.Model):
         VOCAB = "vocab", "Vocabulary"
         CUSTOM = "custom", "Custom"
 
+    class SRSAlgo(models.TextChoices):
+        SM2 = "sm2", "SM-2 (Anki-style)"
+        FSRS = "fsrs", "FSRS-4.5"
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="flash_decks")
     name = models.CharField(max_length=120)
     deck_type = models.CharField(max_length=20, choices=DeckType.choices, default=DeckType.CUSTOM)
     jlpt_level = models.CharField(max_length=2, choices=JLPTLevel.choices, default=JLPTLevel.N2)
     system_key = models.CharField(max_length=20, blank=True, default="")
     is_locked = models.BooleanField(default=False)
+    srs_algo = models.CharField(max_length=10, choices=SRSAlgo.choices, default=SRSAlgo.SM2)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -55,7 +60,7 @@ class Card(models.Model):
     tags = models.JSONField(default=list, blank=True)
     suspended = models.BooleanField(default=False)
 
-    # Anki-like scheduling (simplified)
+    # SRS scheduling fields (shared by SM-2 and FSRS)
     repetitions = models.PositiveIntegerField(default=0)
     interval_days = models.PositiveIntegerField(default=0)
     ease_factor = models.FloatField(default=2.5)
@@ -63,6 +68,11 @@ class Card(models.Model):
     last_reviewed = models.DateTimeField(null=True, blank=True)
     lapses = models.PositiveIntegerField(default=0)
     last_rating = models.CharField(max_length=10, blank=True)
+
+    # FSRS-4.5 extra fields (null when deck uses SM-2)
+    fsrs_stability = models.FloatField(null=True, blank=True)
+    fsrs_difficulty = models.FloatField(null=True, blank=True)
+    fsrs_state = models.CharField(max_length=15, blank=True, default="")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -81,21 +91,25 @@ class Card(models.Model):
         return f"Card({self.id})"
 
     def apply_rating(self, rating: str) -> None:
-        """Apply Anki-style rating: again/hard/good/easy.
-
-        This is a simplified SRS tuned for practice, not a full SM-2 implementation.
-        """
-
-        now = timezone.now()
+        """Dispatch to FSRS-4.5 or SM-2 based on the parent deck's srs_algo."""
         r = (rating or "").strip().lower()
         if r not in {c for c, _ in Card.Rating.choices}:
             raise ValueError("Invalid rating")
 
+        algo = getattr(self.deck, "srs_algo", Deck.SRSAlgo.SM2)
+        if algo == Deck.SRSAlgo.FSRS:
+            from .fsrs_engine import apply_fsrs_rating
+            apply_fsrs_rating(self, r)
+        else:
+            self.apply_sm2_rating(r)
+
+    def apply_sm2_rating(self, r: str) -> None:
+        """SM-2-style rating (original algorithm)."""
+        now = timezone.now()
+        quality = {"again": 0, "hard": 3, "good": 4, "easy": 5}[r]
+
         self.last_reviewed = now
         self.last_rating = r
-
-        # map to SM-2-ish quality: again=0, hard=3, good=4, easy=5
-        quality = {"again": 0, "hard": 3, "good": 4, "easy": 5}[r]
 
         if r == Card.Rating.AGAIN:
             self.lapses += 1
@@ -103,9 +117,10 @@ class Card(models.Model):
             self.interval_days = 0
             self.ease_factor = max(1.3, self.ease_factor - 0.2)
             self.due_at = now + timedelta(minutes=10)
+            if self.lapses >= 8:
+                self.suspended = True  # auto-leech suspension
             return
 
-        # update ease_factor
         ef = self.ease_factor
         ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
         self.ease_factor = min(2.8, max(1.3, ef))

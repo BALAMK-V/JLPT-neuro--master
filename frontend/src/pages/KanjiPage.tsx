@@ -14,6 +14,7 @@ export function KanjiPage() {
   const [level, setLevel] = useState<string>(me?.profile.jlpt_level ?? "N2");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showFurigana, setShowFurigana] = useState(false);
 
   const search = useMemo(() => query.trim(), [query]);
 
@@ -60,12 +61,22 @@ export function KanjiPage() {
         ) : null}
       </div>
 
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+        <button
+          className="btn"
+          onClick={() => setShowFurigana((v) => !v)}
+          style={{ fontSize: 12 }}
+        >
+          {showFurigana ? "Hide Furigana" : "Show Furigana"}
+        </button>
+      </div>
+
       {loading ? <div className="card">Loading...</div> : null}
       {error ? <div className="card">Error: {error}</div> : null}
 
       <div className="grid">
         {items.map((k) => (
-          <KanjiCard key={k.id} kanji={k} />
+          <KanjiCard key={k.id} kanji={k} showFurigana={showFurigana} />
         ))}
         {!loading && !error && items.length === 0 ? (
           <div className="card" style={{ gridColumn: "span 12" }}>

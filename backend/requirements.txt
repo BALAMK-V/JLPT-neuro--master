@@ -15,6 +15,18 @@ pdf2image>=1.16
 # Optional: uncomment for Google Cloud Vision (higher-accuracy Japanese OCR)
 # google-cloud-vision>=3.4
 
-# AI question cleaning (set ANTHROPIC_API_KEY in .env to enable)
+# AI question cleaning and vocabulary explanation (set ANTHROPIC_API_KEY in .env to enable)
 anthropic>=0.30.0
+
+# Celery task queue for background OCR (set CELERY_BROKER_URL in .env to activate)
+celery>=5.3
+redis>=5.0
+
+# Django Channels — WebSocket support for real-time multiplayer quiz
+channels>=4.0
+daphne>=4.0
+channels-redis>=4.0
+
+# FSRS-4.5 spaced repetition algorithm (optional; SM-2 is the default)
+fsrs>=1.0
 

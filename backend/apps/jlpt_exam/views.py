@@ -7,6 +7,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django.conf import settings
+
 from .analysis import build_result_data
 from .models import ExamOption, ExamQuestion, ExamResult, JLPTExam, UserExamSession, UserQuestionAnswer
 from .serializers import (
@@ -163,6 +165,70 @@ class ExamResultViewSet(viewsets.ReadOnlyModelViewSet):
             output.append(q_data)
 
         return Response(output)
+
+
+    @action(detail=False, methods=["get"], url_path="history")
+    def history(self, request: Request) -> Response:
+        """Return the last 20 exam results ordered chronologically for trend charts."""
+        results = (
+            ExamResult.objects.filter(user=request.user)
+            .select_related("exam")
+            .order_by("created_at")[:20]
+        )
+        return Response(
+            [
+                {
+                    "id": r.id,
+                    "exam_title": r.exam.title,
+                    "score_percentage": r.score_percentage,
+                    "section_scores": r.section_scores,
+                    "passed": r.passed,
+                    "created_at": r.created_at,
+                }
+                for r in results
+            ]
+        )
+
+
+class AIExamGenerateView(APIView):
+    """POST /api/exams/ai-generate/  body: { level: "N3", section: "vocabulary" }"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    VALID_LEVELS = {"N5", "N4", "N3", "N2", "N1"}
+    VALID_SECTIONS = {"vocabulary", "grammar", "reading", "full"}
+
+    def post(self, request: Request) -> Response:
+        if not getattr(settings, "ANTHROPIC_API_KEY", ""):
+            return Response(
+                {"detail": "AI exam generation not configured. Add ANTHROPIC_API_KEY to .env."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        level = (request.data.get("level") or "").strip().upper()
+        section = (request.data.get("section") or "").strip().lower()
+
+        if level not in self.VALID_LEVELS:
+            return Response({"detail": f"level must be one of {sorted(self.VALID_LEVELS)}"}, status=status.HTTP_400_BAD_REQUEST)
+        if section not in self.VALID_SECTIONS:
+            return Response({"detail": f"section must be one of {sorted(self.VALID_SECTIONS)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            from .ai_generator import generate_exam
+            exam = generate_exam(level=level, section=section, user=request.user)
+        except RuntimeError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({
+            "exam_id": exam.id,
+            "title": exam.title,
+            "level": exam.level,
+            "section_type": exam.section_type,
+            "question_count": exam.question_count,
+            "duration_minutes": exam.duration_minutes,
+        }, status=status.HTTP_201_CREATED)
 
 
 class UserAnalysisView(APIView):

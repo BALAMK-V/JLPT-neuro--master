@@ -37,6 +37,7 @@ class Vocabulary(models.Model):
     reading = models.CharField(max_length=120, blank=True)
     meaning_en = models.CharField(max_length=255)
     jlpt_level = models.CharField(max_length=2, choices=JLPTLevel.choices, default=JLPTLevel.N2)
+    frequency_rank = models.PositiveIntegerField(null=True, blank=True, help_text="Lower = more common (1 = most frequent)")
     related_kanji = models.ManyToManyField(Kanji, blank=True, related_name="vocabulary")
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -46,6 +47,7 @@ class Vocabulary(models.Model):
         indexes = [
             models.Index(fields=["jlpt_level"]),
             models.Index(fields=["word"]),
+            models.Index(fields=["frequency_rank"]),
         ]
 
     def __str__(self) -> str:

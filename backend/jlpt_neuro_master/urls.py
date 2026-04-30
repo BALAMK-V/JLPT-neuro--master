@@ -6,16 +6,19 @@ from django.views.generic import RedirectView
 from rest_framework.routers import DefaultRouter
 
 from apps.assessment.views import TestQuestionViewSet, TestViewSet
+from apps.content.ai_views import VocabExplainView
 from apps.content.views import KanjiImportView, KanjiViewSet, VocabularyImportView, VocabularyViewSet
-from apps.flashcards.views import CardViewSet, DeckViewSet, FlashImportView, FlashNextView, FlashReviewView
+from apps.flashcards.views import CardViewSet, DeckViewSet, FlashDueAllView, FlashImportView, FlashLeechesView, FlashNextView, FlashReviewView
+from apps.flashcards.mine_views import SentenceMineView
 from apps.grammar.views import GrammarImportView, GrammarQuestionViewSet
+from apps.grammar.ai_views import GrammarCheckView
 from apps.listening.views import AudioZipImportView, ListeningImportView, ListeningQuestionViewSet
 from apps.reading.views import ReadingImportView, ReadingPassageViewSet, ReadingQuestionViewSet
 from apps.notes.views import NoteViewSet
 from apps.neuro.views import NeuroQuestionListView, NeuroResultView, NeuroSubmitView
 from apps.tracking.views import DashboardView, SessionViewSet, UserProgressViewSet
 from apps.users.views import AppearanceResetView, AppearanceUpdateView, AppearanceView, CompanionUpdateView, CompanionView, MeView
-from apps.jlpt_exam.views import ExamResultViewSet, JLPTExamViewSet, UserAnalysisView, UserExamSessionViewSet
+from apps.jlpt_exam.views import AIExamGenerateView, ExamResultViewSet, JLPTExamViewSet, UserAnalysisView, UserExamSessionViewSet
 from apps.ocr.views import (
     AIParsePaperView,
     ImportParsedQuestionsView,
@@ -54,8 +57,14 @@ urlpatterns = [
     path("api/", include(router.urls)),
     path("api/kanji/import/", KanjiImportView.as_view(), name="kanji-import"),
     path("api/vocab/import/", VocabularyImportView.as_view(), name="vocab-import"),
+    path("api/vocab/<int:pk>/explain/", VocabExplainView.as_view(), name="vocab-explain"),
     path("api/reading/import/", ReadingImportView.as_view(), name="reading-import"),
     path("api/grammar/import/", GrammarImportView.as_view(), name="grammar-import"),
+    path("api/grammar/check/", GrammarCheckView.as_view(), name="grammar-check"),
+    path("api/flash/due-all/", FlashDueAllView.as_view(), name="flash-due-all"),
+    path("api/flash/mine/", SentenceMineView.as_view(), name="flash-mine"),
+    path("api/flash/leeches/", FlashLeechesView.as_view(), name="flash-leeches"),
+    path("api/flash/leeches/<int:card_id>/unsuspend/", FlashLeechesView.as_view(), name="flash-leech-unsuspend"),
     path("api/flash/next/", FlashNextView.as_view(), name="flash-next"),
     path("api/flash/review/", FlashReviewView.as_view(), name="flash-review"),
     path("api/flash/import/", FlashImportView.as_view(), name="flash-import"),
@@ -73,6 +82,7 @@ urlpatterns = [
     path("api/auth/", include("apps.users.auth_urls")),
     path("api/auth/me/", MeView.as_view(), name="me"),
     # JLPT Exam system
+    path("api/exams/ai-generate/", AIExamGenerateView.as_view(), name="exam-ai-generate"),
     path("api/exams/<int:pk>/start/", JLPTExamViewSet.as_view({"post": "start"}), name="exam-start"),
     path("api/exam-sessions/<int:pk>/submit/", UserExamSessionViewSet.as_view({"post": "submit"}), name="exam-submit"),
     path("api/exam-results/<int:pk>/review/", ExamResultViewSet.as_view({"get": "review"}), name="exam-review"),

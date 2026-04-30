@@ -18,6 +18,7 @@ class DeckSerializer(serializers.ModelSerializer):
             "jlpt_level",
             "system_key",
             "is_locked",
+            "srs_algo",
             "created_at",
             "updated_at",
             "due_count",
@@ -49,6 +50,9 @@ class CardSerializer(serializers.ModelSerializer):
             "last_reviewed",
             "lapses",
             "last_rating",
+            "fsrs_stability",
+            "fsrs_difficulty",
+            "fsrs_state",
             "created_at",
             "updated_at",
         ]

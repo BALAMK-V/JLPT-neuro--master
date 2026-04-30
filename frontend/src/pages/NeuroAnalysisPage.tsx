@@ -53,6 +53,8 @@ export function NeuroAnalysisPage() {
   const [submitting, setSubmitting] = useState(false);
   const [paused, setPaused] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [prevResultType, setPrevResultType] = useState<string | null>(null);
+  const [showProfileDiff, setShowProfileDiff] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -67,6 +69,7 @@ export function NeuroAnalysisPage() {
         if (!mounted) return;
         setQuestions(questionData);
         setResult(resultData);
+        if (resultData) setPrevResultType(resultData.result_type);
       } catch (e: any) {
         setError(String(e?.message ?? e));
       } finally {
@@ -104,6 +107,9 @@ export function NeuroAnalysisPage() {
         })),
       };
       const data = await api<NeuroProfileResult>("/neuro/submit/", "POST", payload);
+      if (prevResultType && prevResultType !== data.result_type) {
+        setShowProfileDiff(true);
+      }
       setResult(data);
       neuroSounds.chime();
       await refresh();
@@ -115,15 +121,68 @@ export function NeuroAnalysisPage() {
   };
 
   const restart = () => {
+    if (result) setPrevResultType(result.result_type);
     setResult(null);
     setAnswers({});
     setCurrent(0);
     setPaused(false);
+    setShowProfileDiff(false);
   };
+
+  const REASSESS_DAYS = 30;
+  const shouldReassess = result && (result.days_since_assessment ?? 0) >= REASSESS_DAYS && !Object.keys(answers).length;
 
   return (
     <div>
       <PageHeader title="Learning Style Check" subtitle="Personalize your Japanese study flow with a short comfort and focus check." />
+
+      {/* Profile evolved modal */}
+      {showProfileDiff && result && prevResultType && (
+        <div
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000,
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+          }}
+          onClick={() => setShowProfileDiff(false)}
+        >
+          <div className="card" style={{ maxWidth: 440, width: "100%", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 36, marginBottom: 8 }}>🌱</div>
+            <div className="card__title">Your profile has evolved!</div>
+            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, lineHeight: 1.7, margin: "10px 0 16px" }}>
+              Your learning style shifted from <strong style={{ color: "#a78bfa" }}>{prevResultType.replace(/_/g, " ")}</strong> to{" "}
+              <strong style={{ color: "#4ade80" }}>{result.result_type.replace(/_/g, " ")}</strong>.
+              Your session settings and UI have been updated to match.
+            </p>
+            <button className="btn" onClick={() => setShowProfileDiff(false)}>
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 30-day reassessment nudge */}
+      {shouldReassess && (
+        <div style={{
+          background: "rgba(167,139,250,0.12)",
+          border: "1px solid rgba(167,139,250,0.35)",
+          borderRadius: 10,
+          padding: "12px 16px",
+          marginBottom: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}>
+          <span style={{ fontSize: 22 }}>🔄</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>Time to reassess!</div>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
+              It's been {result!.days_since_assessment} days since your last learning profile check.
+              A quick retake helps keep your study settings accurate.
+            </div>
+          </div>
+          <button className="btn" onClick={restart}>Retake</button>
+        </div>
+      )}
 
       {error ? <div className="error">{error}</div> : null}
       {loading ? <div className="notice">Loading analysis questions...</div> : null}

@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import type { ExamQuestionWithAnswer, ExamResult } from "../api/exam";
 import { examApi } from "../api/exam";
+import { api } from "../app/api/client";
 import { ResultAnalysisPanel } from "../components/exam/AnalysisPanel";
 import { ResultDashboard } from "../components/exam/ResultDashboard";
+import { ScoreHistoryChart } from "../components/ScoreHistoryChart";
+import type { ExamHistoryEntry } from "../types";
 
 const SECTION_LABEL: Record<string, string> = {
   vocabulary: "語彙 Vocabulary",
@@ -80,16 +83,22 @@ interface Props {
 export function ExamResultPage({ resultId, onBack }: Props) {
   const [result, setResult] = useState<ExamResult | null>(null);
   const [reviewQuestions, setReviewQuestions] = useState<ExamQuestionWithAnswer[]>([]);
-  const [tab, setTab] = useState<"summary" | "review">("summary");
+  const [history, setHistory] = useState<ExamHistoryEntry[]>([]);
+  const [tab, setTab] = useState<"summary" | "review" | "history">("summary");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([examApi.getResult(resultId), examApi.getResultReview(resultId)])
-      .then(([r, review]) => {
+    Promise.all([
+      examApi.getResult(resultId),
+      examApi.getResultReview(resultId),
+      api<ExamHistoryEntry[]>("/exam-results/history/").catch(() => [] as ExamHistoryEntry[]),
+    ])
+      .then(([r, review, hist]) => {
         setResult(r);
         setReviewQuestions(review);
+        setHistory(hist);
       })
       .catch((e) => setError(String(e)))
       .finally(() => setLoading(false));
@@ -107,13 +116,13 @@ export function ExamResultPage({ resultId, onBack }: Props) {
       </div>
 
       <div className="exam-result-page__tabs">
-        {(["summary", "review"] as const).map((t) => (
+        {(["summary", "review", "history"] as const).map((t) => (
           <button
             key={t}
             className={`tab-btn ${tab === t ? "tab-btn--active" : ""}`}
             onClick={() => setTab(t)}
           >
-            {t === "summary" ? "Summary & Analysis" : "Review Questions"}
+            {t === "summary" ? "Summary & Analysis" : t === "review" ? "Review Questions" : "Score History"}
           </button>
         ))}
       </div>
@@ -133,6 +142,13 @@ export function ExamResultPage({ resultId, onBack }: Props) {
           {reviewQuestions.map((q, i) => (
             <ReviewQuestion key={q.id} question={q} index={i} />
           ))}
+        </div>
+      )}
+
+      {tab === "history" && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card__title">Your exam score history</div>
+          <ScoreHistoryChart history={history} />
         </div>
       )}
     </div>

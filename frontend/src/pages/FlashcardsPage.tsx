@@ -19,8 +19,12 @@ export function FlashcardsPage() {
   const [back, setBack] = useState("");
   const [newDeckName, setNewDeckName] = useState("");
   const [newDeckType, setNewDeckType] = useState<string>("custom");
+  const [newDeckAlgo, setNewDeckAlgo] = useState<"sm2" | "fsrs">("sm2");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [leechCount, setLeechCount] = useState(0);
+  const [showLeeches, setShowLeeches] = useState(false);
+  const [leeches, setLeeches] = useState<FlashCard[]>([]);
 
   const selected = useMemo(() => decks.find((d) => d.id === deckId) ?? null, [decks, deckId]);
 
@@ -37,8 +41,32 @@ export function FlashcardsPage() {
     setCards(data.results);
   };
 
+  const loadLeeches = async () => {
+    try {
+      const data = await api<{ count: number; results: FlashCard[] }>("/flash/leeches/");
+      setLeechCount(data.count);
+      setLeeches(data.results);
+    } catch {
+      // leech count is non-critical
+    }
+  };
+
+  const unsuspendLeech = async (cardId: number) => {
+    setBusy(true);
+    try {
+      await api(`/flash/leeches/${cardId}/unsuspend/`, "POST");
+      await loadLeeches();
+      if (deckId) await loadCards(deckId);
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   useEffect(() => {
     loadDecks().catch((e) => setError(String(e?.message ?? e)));
+    loadLeeches();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -57,6 +85,7 @@ export function FlashcardsPage() {
         name,
         deck_type: newDeckType,
         jlpt_level: me?.profile.jlpt_level ?? "N2",
+        srs_algo: newDeckAlgo,
       });
       setNewDeckName("");
       await loadDecks();
@@ -149,6 +178,56 @@ export function FlashcardsPage() {
 
       {error ? <div className="card">Error: {error}</div> : null}
 
+      {leechCount > 0 && (
+        <div style={{
+          background: "rgba(248,113,113,0.1)",
+          border: "1px solid rgba(248,113,113,0.35)",
+          borderRadius: 10,
+          padding: "10px 16px",
+          marginBottom: 12,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}>
+          <span style={{ fontSize: 20 }}>🐛</span>
+          <div style={{ flex: 1 }}>
+            <span style={{ fontWeight: 600, fontSize: 14 }}>
+              You have {leechCount} leech{leechCount > 1 ? "es" : ""} to relearn
+            </span>
+            <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, marginLeft: 8 }}>
+              (cards that failed 8+ times — auto-suspended)
+            </span>
+          </div>
+          <button className="btn" style={{ fontSize: 12 }} onClick={() => setShowLeeches((v) => !v)}>
+            {showLeeches ? "Hide Leeches" : "View Leeches"}
+          </button>
+        </div>
+      )}
+
+      {showLeeches && leeches.length > 0 && (
+        <div className="card" style={{ marginBottom: 12 }}>
+          <div className="card__title">Leech Cards</div>
+          <div style={{ display: "grid", gap: 8 }}>
+            {leeches.map((c) => (
+              <div key={c.id} style={{
+                display: "flex", alignItems: "center", gap: 10,
+                background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: "8px 12px",
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14 }}>{c.front}</div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                    {c.lapses} lapses — deck: {decks.find((d) => d.id === c.deck)?.name ?? c.deck}
+                  </div>
+                </div>
+                <button className="btn" style={{ fontSize: 12 }} disabled={busy} onClick={() => unsuspendLeech(c.id)}>
+                  Relearn
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="notice">
         <strong>Review setup:</strong> this style uses about {plan.flashcardLimit} due cards per pass and a {plan.sessionMinutes}-minute target.
       </div>
@@ -179,6 +258,7 @@ export function FlashcardsPage() {
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
                   <span className="pill">{d.deck_type}</span>
+                  <span className="pill">{d.srs_algo ?? "sm2"}</span>
                   <span className="pill">due {d.due_count}</span>
                   <span className="pill">cards {d.total_cards}</span>
                 </div>
@@ -191,10 +271,14 @@ export function FlashcardsPage() {
             <div style={{ fontWeight: 900, marginBottom: 8 }}>New deck</div>
             <input className="field field--sm" placeholder="Deck name" value={newDeckName} onChange={(e) => setNewDeckName(e.target.value)} />
             <div className="toolbar" style={{ marginTop: 8 }}>
-              <select className="field field--sm" value={newDeckType} onChange={(e) => setNewDeckType(e.target.value)} style={{ maxWidth: 160 }}>
+              <select className="field field--sm" value={newDeckType} onChange={(e) => setNewDeckType(e.target.value)} style={{ maxWidth: 120 }}>
                 <option value="kanji">kanji</option>
                 <option value="vocab">vocab</option>
                 <option value="custom">custom</option>
+              </select>
+              <select className="field field--sm" value={newDeckAlgo} onChange={(e) => setNewDeckAlgo(e.target.value as "sm2" | "fsrs")} style={{ maxWidth: 120 }}>
+                <option value="sm2">SM-2</option>
+                <option value="fsrs">FSRS-4.5</option>
               </select>
               <button className="btn" disabled={busy} onClick={createDeck}>
                 Create

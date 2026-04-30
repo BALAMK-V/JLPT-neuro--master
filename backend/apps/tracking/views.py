@@ -3,10 +3,14 @@
 from datetime import date
 
 from django.db.models import Avg, Count
+from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from apps.content.models import Vocabulary
+from apps.flashcards.models import Card
 
 from .models import Session, UserProgress
 from .serializers import ReviewApplySerializer, SessionSerializer, UserProgressSerializer
@@ -55,13 +59,33 @@ class DashboardView(APIView):
 
         weak = progress.values("item_type").annotate(avg=Avg("accuracy"), count=Count("id")).order_by("avg")[:5]
 
+        flash_due_count = Card.objects.filter(
+            deck__user=user, suspended=False, due_at__lte=timezone.now()
+        ).count()
+
+        # Top 5 most-frequent vocab words the user hasn't learned yet
+        learned_vocab_ids = set(
+            progress.filter(item_type="vocab").values_list("item_id", flat=True)
+        )
+        level = getattr(getattr(user, "profile", None), "jlpt_level", None)
+        freq_qs = Vocabulary.objects.filter(
+            frequency_rank__isnull=False
+        ).exclude(id__in=learned_vocab_ids).order_by("frequency_rank")
+        if level:
+            freq_qs = freq_qs.filter(jlpt_level=level)
+        top_unknown = list(
+            freq_qs[:5].values("id", "word", "reading", "meaning_en", "frequency_rank")
+        )
+
         return Response(
             {
                 "avg_accuracy": round(avg_accuracy, 2),
                 "due_reviews": due_count,
+                "flash_due_count": flash_due_count,
                 "weak_areas": list(weak),
                 "streak_days": 0,
                 "minutes_spent_today": 0,
+                "top_unknown_words": top_unknown,
                 "recommendations": self._recommendations(user, progress),
             },
             status=status.HTTP_200_OK,

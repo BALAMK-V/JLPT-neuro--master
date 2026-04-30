@@ -125,6 +125,7 @@ export interface QuestionPaper {
   status: "pending" | "processing" | "completed" | "failed";
   extracted_text: string;
   parsed_questions: ParsedQuestion[];
+  ai_parsed_questions: ParsedQuestion[];
   question_count: number;
   error_message: string;
   created_at: string;

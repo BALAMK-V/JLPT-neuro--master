@@ -1,10 +1,27 @@
 import type { Kanji } from "../types";
 
-export function KanjiCard({ kanji, onAddNote }: { kanji: Kanji; onAddNote?: () => void }) {
+export function KanjiCard({
+  kanji,
+  onAddNote,
+  showFurigana = false,
+}: {
+  kanji: Kanji;
+  onAddNote?: () => void;
+  showFurigana?: boolean;
+}) {
+  const reading = kanji.kunyomi || kanji.onyomi || "";
+
   return (
     <div className="card" style={{ gridColumn: "span 6" }}>
       <div className="card__title">
-        <span style={{ fontSize: 34, marginRight: 10 }}>{kanji.character}</span>
+        {showFurigana && reading ? (
+          <ruby style={{ fontSize: 34, marginRight: 10 }}>
+            {kanji.character}
+            <rt style={{ fontSize: "0.35em", color: "rgba(255,255,255,0.6)" }}>{reading}</rt>
+          </ruby>
+        ) : (
+          <span style={{ fontSize: 34, marginRight: 10 }}>{kanji.character}</span>
+        )}
         <span className="pill">{kanji.jlpt_level}</span>
       </div>
       <div style={{ color: "rgba(255,255,255,0.75)", marginBottom: 10 }}>{kanji.meaning_en}</div>

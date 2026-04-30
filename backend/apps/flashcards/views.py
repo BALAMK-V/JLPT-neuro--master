@@ -249,6 +249,54 @@ class ImportResult:
     skipped: int
 
 
+class FlashDueAllView(APIView):
+    """GET /api/flash/due-all/ — total due count + first N cards across all decks."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):  # type: ignore[no-untyped-def]
+        limit = int(request.query_params.get("limit") or 20)
+        limit = max(1, min(200, limit))
+
+        now = timezone.now()
+        qs = Card.objects.filter(
+            deck__user=request.user, suspended=False, due_at__lte=now
+        ).select_related("deck", "kanji", "vocab")
+
+        total_due = qs.count()
+        items = list(qs.order_by("due_at", "id")[:limit])
+        return Response(
+            {"total_due": total_due, "count": len(items), "results": CardSerializer(items, many=True).data}
+        )
+
+
+class FlashLeechesView(APIView):
+    """GET /api/flash/leeches/ — list suspended leech cards (lapses >= 8).
+       POST /api/flash/leeches/<id>/unsuspend/ — manually unsuspend a leech."""
+
+    LEECH_THRESHOLD = 8
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):  # type: ignore[no-untyped-def]
+        leeches = Card.objects.filter(
+            deck__user=request.user, suspended=True, lapses__gte=self.LEECH_THRESHOLD
+        ).select_related("deck", "kanji", "vocab").order_by("-lapses")
+        return Response({"count": leeches.count(), "results": CardSerializer(leeches, many=True).data})
+
+    def post(self, request, card_id: int):  # type: ignore[no-untyped-def]
+        try:
+            card = Card.objects.get(id=card_id, deck__user=request.user)
+        except Card.DoesNotExist:
+            return Response({"detail": "Card not found."}, status=status.HTTP_404_NOT_FOUND)
+        card.suspended = False
+        card.lapses = 0
+        card.repetitions = 0
+        card.interval_days = 0
+        card.due_at = timezone.now()
+        card.save()
+        return Response(CardSerializer(card).data)
+
+
 class FlashImportView(APIView):
     """Import flashcards from a simple CSV (Anki-like).
 

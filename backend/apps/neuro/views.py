@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -93,4 +94,7 @@ class NeuroResultView(APIView):
             profile = request.user.neuro_profile
         except UserNeuroProfile.DoesNotExist:
             return Response({"detail": "No neuro analysis result found."}, status=status.HTTP_404_NOT_FOUND)
-        return Response(UserNeuroProfileSerializer(profile).data)
+        data = UserNeuroProfileSerializer(profile).data
+        days_since = (timezone.now() - profile.updated_at).days
+        data["days_since_assessment"] = days_since
+        return Response(data)

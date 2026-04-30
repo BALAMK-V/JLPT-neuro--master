@@ -8,6 +8,11 @@ import { KanjiPage } from "../pages/KanjiPage";
 import { ListeningPage } from "../pages/ListeningPage";
 import { ReadingPage } from "../pages/ReadingPage";
 import { GrammarPage } from "../pages/GrammarPage";
+import { GrammarCheckPage } from "../pages/GrammarCheckPage";
+import { AIExamGeneratorPage } from "../pages/AIExamGeneratorPage";
+import { SpeakingModePage } from "../pages/SpeakingModePage";
+import { SentenceMiningPage } from "../pages/SentenceMiningPage";
+import { MultiplayerQuizPage } from "../pages/MultiplayerQuizPage";
 import { NotesPage } from "../pages/NotesPage";
 import { NeuroAnalysisPage } from "../pages/NeuroAnalysisPage";
 import { PaperUploadPage } from "../pages/PaperUploadPage";
@@ -51,6 +56,16 @@ function AppShell() {
         return <ReadingPage />;
       case "grammar":
         return <GrammarPage />;
+      case "grammarCheck":
+        return <GrammarCheckPage />;
+      case "aiExamGen":
+        return <AIExamGeneratorPage />;
+      case "speakingMode":
+        return <SpeakingModePage />;
+      case "sentenceMining":
+        return <SentenceMiningPage />;
+      case "multiplayerQuiz":
+        return <MultiplayerQuizPage />;
       case "tests":
         return <TestsPage />;
       case "jlptExam":

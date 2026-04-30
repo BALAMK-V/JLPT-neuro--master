@@ -30,19 +30,21 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "storages",
+    "channels",
     "apps.users.apps.UsersConfig",
-      "apps.content.apps.ContentConfig",
-      "apps.listening.apps.ListeningConfig",
-      "apps.reading.apps.ReadingConfig",
-      "apps.grammar.apps.GrammarConfig",
-      "apps.flashcards.apps.FlashcardsConfig",
-      "apps.assessment.apps.AssessmentConfig",
-      "apps.notes.apps.NotesConfig",
-      "apps.neuro.apps.NeuroConfig",
-      "apps.tracking.apps.TrackingConfig",
-      "apps.jlpt_exam.apps.JlptExamConfig",
-      "apps.ocr.apps.OcrConfig",
-  ]
+    "apps.content.apps.ContentConfig",
+    "apps.listening.apps.ListeningConfig",
+    "apps.reading.apps.ReadingConfig",
+    "apps.grammar.apps.GrammarConfig",
+    "apps.flashcards.apps.FlashcardsConfig",
+    "apps.assessment.apps.AssessmentConfig",
+    "apps.notes.apps.NotesConfig",
+    "apps.neuro.apps.NeuroConfig",
+    "apps.tracking.apps.TrackingConfig",
+    "apps.jlpt_exam.apps.JlptExamConfig",
+    "apps.ocr.apps.OcrConfig",
+    "apps.quiz_room",
+]
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -139,6 +141,32 @@ SIMPLE_JWT = {
 }
 
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", "") or ""
+ANTHROPIC_MODEL = env("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001") or "claude-haiku-4-5-20251001"
+
+# Celery — set CELERY_BROKER_URL in .env to activate (e.g. redis://localhost:6379/0)
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", "redis://localhost:6379/0") or "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", "redis://localhost:6379/0") or "redis://localhost:6379/0"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+
+# Django Channels — WebSocket support for multiplayer quiz
+# Uses Redis channel layer when REDIS_URL is set; falls back to in-memory (single process only)
+_REDIS_URL = env("REDIS_URL", "") or env("CELERY_BROKER_URL", "") or ""
+if _REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [_REDIS_URL]},
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        }
+    }
 
 USE_S3 = env("USE_S3", "0") == "1"
 if USE_S3:
