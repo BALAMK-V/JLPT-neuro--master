@@ -1,19 +1,23 @@
 import { useMemo, useState } from "react";
+import type { ValidationError } from "./validators";
 
 export function CsvEditor({
   headers,
   rows,
   onChange,
+  errors = [],
   maxPreviewRows = 25,
 }: {
   headers: string[];
   rows: Array<Record<string, string>>;
   onChange: (rows: Array<Record<string, string>>) => void;
+  errors?: ValidationError[];
   maxPreviewRows?: number;
 }) {
   const [limit, setLimit] = useState(maxPreviewRows);
 
   const visible = useMemo(() => rows.slice(0, limit), [rows, limit]);
+  const errorRows = useMemo(() => new Set(errors.map((e) => e.rowIndex)), [errors]);
 
   if (!headers.length) return null;
 
@@ -31,7 +35,7 @@ export function CsvEditor({
         </thead>
         <tbody>
           {visible.map((r, idx) => (
-            <tr key={idx}>
+            <tr key={idx} className={errorRows.has(idx) ? "tr--error" : undefined}>
               <td style={{ color: "rgba(255,255,255,0.65)" }}>{idx + 1}</td>
               {headers.map((h) => (
                 <td key={h}>

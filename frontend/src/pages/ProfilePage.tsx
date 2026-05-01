@@ -6,10 +6,89 @@ import { useMe } from "../app/state/user";
 import { defaultAliasForType, learningLabelFromAlias, learningTypeFromAlias, type LearningAlias } from "../app/labels";
 import type { LearningType, Me } from "../types";
 
-export function ProfilePage() {
-  const { me, refresh } = useMe();
+function parseApiError(e: unknown): string {
+  try {
+    const msg = (e as any)?.message ?? String(e);
+    const parsed = JSON.parse(msg);
+    return parsed.detail ?? parsed.non_field_errors?.[0] ?? msg;
+  } catch {
+    return String((e as any)?.message ?? e);
+  }
+}
+
+function ChangePasswordSection({ onPasswordChanged }: { onPasswordChanged: () => void }) {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const submit = async () => {
+    setError(null);
+    if (!current || !next) { setError("All fields are required."); return; }
+    if (next.length < 8) { setError("New password must be at least 8 characters."); return; }
+    if (next !== confirm) { setError("New passwords do not match."); return; }
+    setSaving(true);
+    try {
+      await api("/auth/change-password/", "POST", { current_password: current, new_password: next });
+      setSuccess(true);
+      setTimeout(() => onPasswordChanged(), 1500);
+    } catch (e) {
+      setError(parseApiError(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="notice notice--ok" style={{ marginTop: 0 }}>
+        Password changed. Signing you out…
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 10 }}>
+      <input
+        className="field"
+        type="password"
+        placeholder="Current password"
+        value={current}
+        autoComplete="current-password"
+        onChange={(e) => setCurrent(e.target.value)}
+      />
+      <input
+        className="field"
+        type="password"
+        placeholder="New password (min. 8 characters)"
+        value={next}
+        autoComplete="new-password"
+        onChange={(e) => setNext(e.target.value)}
+      />
+      <input
+        className="field"
+        type="password"
+        placeholder="Confirm new password"
+        value={confirm}
+        autoComplete="new-password"
+        onChange={(e) => setConfirm(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && submit()}
+      />
+      {error ? <div style={{ color: "var(--bad)", fontSize: 13 }}>{error}</div> : null}
+      <button className="btn btn--primary" disabled={saving} onClick={submit} style={{ width: "fit-content" }}>
+        {saving ? "Saving…" : "Change password"}
+      </button>
+    </div>
+  );
+}
+
+export function ProfilePage() {
+  const { me, refresh, logout } = useMe();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showChangePw, setShowChangePw] = useState(false);
 
   if (!me) return null;
   const plan = getLearningStylePlan(me.profile);
@@ -111,6 +190,36 @@ export function ProfilePage() {
           <div style={{ marginTop: 14, color: "rgba(255,255,255,0.6)", fontSize: 12 }}>
             Current plan: {plan.sessionMinutes}-minute sessions, {plan.reminderMinutes}-minute reminders, about {plan.defaultQuestionCount} items per block.
           </div>
+        </div>
+
+        <div className="card" style={{ gridColumn: "span 12" }}>
+          <div className="card__title">Security</div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>Change password</div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 3 }}>
+                Update your account password
+              </div>
+            </div>
+            <button
+              className="btn"
+              onClick={() => setShowChangePw((v) => !v)}
+            >
+              {showChangePw ? "Cancel" : "Change password"}
+            </button>
+          </div>
+
+          {showChangePw && (
+            <div style={{ marginTop: 14, borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 14 }}>
+              <ChangePasswordSection
+                onPasswordChanged={() => {
+                  setShowChangePw(false);
+                  logout();
+                }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

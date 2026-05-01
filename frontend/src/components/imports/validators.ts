@@ -104,6 +104,10 @@ export function validateReading(headers: string[], rows: Array<Record<string, st
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
 
+    for (const f of required) {
+      if (!(r[f] ?? "").trim()) errors.push({ rowIndex: i, field: f, message: `${f} is required.` });
+    }
+
     const ptype = (r["passage_type"] ?? "").trim();
     if (ptype && !["short", "medium", "long", "integrated", "info_search"].includes(ptype)) {
       errors.push({ rowIndex: i, field: "passage_type", message: "passage_type must be short/medium/long/integrated/info_search." });
@@ -137,6 +141,10 @@ export function validateGrammar(headers: string[], rows: Array<Record<string, st
   const errors: ValidationError[] = [];
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
+
+    for (const f of required) {
+      if (!(r[f] ?? "").trim()) errors.push({ rowIndex: i, field: f, message: `${f} is required.` });
+    }
 
     const ans = (r["answer"] ?? "").trim().toUpperCase();
     if (ans && !["A", "B", "C", "D"].includes(ans)) errors.push({ rowIndex: i, field: "answer", message: "answer must be A-D." });

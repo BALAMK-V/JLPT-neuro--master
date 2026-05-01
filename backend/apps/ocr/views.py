@@ -12,6 +12,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.users.permissions import IsManagementUser
+
 from apps.jlpt_exam.models import ExamOption, ExamQuestion, JLPTExam
 
 from .ai_cleaner import ai_clean_questions
@@ -76,7 +78,7 @@ class QuestionPaperUploadView(APIView):
     """
 
     parser_classes = [MultiPartParser, FormParser]
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsManagementUser]
 
     def post(self, request: Request) -> Response:
         serializer = PaperUploadSerializer(data=request.data)
@@ -111,7 +113,7 @@ class QuestionPaperUploadView(APIView):
 class QuestionPaperListView(APIView):
     """GET /api/ocr/papers/ — list papers for the current user."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsManagementUser]
 
     def get(self, request: Request) -> Response:
         papers = QuestionPaper.objects.filter(uploaded_by=request.user)
@@ -123,7 +125,7 @@ class QuestionPaperDetailView(APIView):
     GET  /api/ocr/papers/<pk>/ — fetch paper (poll here for OCR status).
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsManagementUser]
 
     def get(self, request: Request, pk: int) -> Response:
         try:
@@ -143,7 +145,7 @@ class AIParsePaperView(APIView):
     in ai_parsed_questions.  Requires ANTHROPIC_API_KEY in .env.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsManagementUser]
 
     def post(self, request: Request, pk: int) -> Response:
         if not getattr(settings, "ANTHROPIC_API_KEY", ""):
@@ -200,7 +202,7 @@ class UpdateParsedQuestionsView(APIView):
     This is the "save edits" endpoint used by the QuestionEditor UI.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsManagementUser]
 
     def patch(self, request: Request, pk: int) -> Response:
         try:
@@ -233,7 +235,7 @@ class ImportParsedQuestionsView(APIView):
     Creates a new exam when exam_id is omitted.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsManagementUser]
 
     def post(self, request: Request) -> Response:
         serializer = ImportConfirmSerializer(data=request.data)

@@ -10,6 +10,8 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.users.permissions import IsManagementUser
+
 from .models import JLPTLevel, Kanji, KanjiExample, Vocabulary
 from .serializers import KanjiSerializer, VocabularySerializer
 
@@ -34,6 +36,9 @@ class VocabularyViewSet(viewsets.ModelViewSet):
     ordering_fields = ["id", "word", "jlpt_level"]
 
 
+_MAX_CSV_BYTES = 5 * 1024 * 1024  # 5 MB
+
+
 class KanjiImportView(APIView):
     """Multipart POST: csv_file
 
@@ -44,13 +49,15 @@ class KanjiImportView(APIView):
       "JP|EN; JP|EN; JP" (semicolon-separated; EN optional)
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsManagementUser]
     parser_classes = [MultiPartParser]
 
     def post(self, request):  # type: ignore[no-untyped-def]
         csv_file = request.FILES.get("csv_file")
         if not csv_file:
             return Response({"detail": "csv_file is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if csv_file.size > _MAX_CSV_BYTES:
+            return Response({"detail": "File too large (max 5 MB)."}, status=status.HTTP_400_BAD_REQUEST)
 
         decoded = csv_file.read().decode("utf-8-sig")
         reader = csv.DictReader(io.StringIO(decoded))
@@ -105,7 +112,7 @@ class KanjiImportView(APIView):
         return Response({"created": created, "updated": updated}, status=status.HTTP_201_CREATED)
 
 
-class VocabularyImportView(APIView):
+class VocabularyImportView(APIView):  # management-only
     """Multipart POST: csv_file
 
     CSV headers (case-insensitive):
@@ -115,13 +122,15 @@ class VocabularyImportView(APIView):
       "勉;強" (semicolon-separated kanji characters)
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsManagementUser]
     parser_classes = [MultiPartParser]
 
     def post(self, request):  # type: ignore[no-untyped-def]
         csv_file = request.FILES.get("csv_file")
         if not csv_file:
             return Response({"detail": "csv_file is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if csv_file.size > _MAX_CSV_BYTES:
+            return Response({"detail": "File too large (max 5 MB)."}, status=status.HTTP_400_BAD_REQUEST)
 
         decoded = csv_file.read().decode("utf-8-sig")
         reader = csv.DictReader(io.StringIO(decoded))

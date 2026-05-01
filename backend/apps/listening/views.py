@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.content.models import JLPTLevel
+from apps.users.permissions import IsManagementUser
 
 from .models import ListeningQuestion
 from .serializers import ListeningQuestionSerializer
@@ -90,6 +91,10 @@ def _normalize_question_type(raw: str) -> str:
     return mapping.get(raw.strip(), mapping.get(v, v))
 
 
+_MAX_CSV_BYTES = 5 * 1024 * 1024    # 5 MB
+_MAX_ZIP_BYTES = 50 * 1024 * 1024   # 50 MB
+
+
 class ListeningImportView(APIView):
     """
     Multipart POST:
@@ -106,7 +111,7 @@ class ListeningImportView(APIView):
     - question_type values: gist, detail, inference, purpose, response.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsManagementUser]
     parser_classes = [MultiPartParser]
 
     def post(self, request):  # type: ignore[no-untyped-def]
@@ -114,6 +119,10 @@ class ListeningImportView(APIView):
         audio_zip = request.FILES.get("audio_zip")
         if not csv_file:
             return Response({"detail": "csv_file is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if csv_file.size > _MAX_CSV_BYTES:
+            return Response({"detail": "CSV file too large (max 5 MB)."}, status=status.HTTP_400_BAD_REQUEST)
+        if audio_zip and audio_zip.size > _MAX_ZIP_BYTES:
+            return Response({"detail": "Audio ZIP too large (max 50 MB)."}, status=status.HTTP_400_BAD_REQUEST)
 
         audio_bytes = audio_zip.read() if audio_zip else None
         zip_reader = zipfile.ZipFile(io.BytesIO(audio_bytes)) if audio_bytes else None
@@ -226,13 +235,15 @@ class AudioZipImportView(APIView):
     Saves all files in ZIP under listening/audio/ and returns the saved filenames.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsManagementUser]
     parser_classes = [MultiPartParser]
 
     def post(self, request):  # type: ignore[no-untyped-def]
         audio_zip = request.FILES.get("audio_zip")
         if not audio_zip:
             return Response({"detail": "audio_zip is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if audio_zip.size > _MAX_ZIP_BYTES:
+            return Response({"detail": "Audio ZIP too large (max 50 MB)."}, status=status.HTTP_400_BAD_REQUEST)
 
         audio_bytes = audio_zip.read()
         zip_reader = zipfile.ZipFile(io.BytesIO(audio_bytes))

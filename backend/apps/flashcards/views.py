@@ -13,6 +13,8 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.users.permissions import IsManagementUser
+
 from apps.content.models import Kanji, JLPTLevel, Vocabulary
 from apps.users.models import UserProfile
 
@@ -313,7 +315,7 @@ class FlashImportView(APIView):
     tags: semicolon-separated.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsManagementUser]
     parser_classes = [MultiPartParser]
 
     def post(self, request):  # type: ignore[no-untyped-def]

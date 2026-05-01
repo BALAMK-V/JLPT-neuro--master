@@ -26,7 +26,8 @@ class MeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "first_name", "last_name", "profile"]
+        fields = ["id", "username", "email", "first_name", "last_name", "is_staff", "profile"]
+        read_only_fields = ["is_staff"]
 
     def update(self, instance, validated_data):  # type: ignore[no-untyped-def]
         profile_data = validated_data.pop("profile", None)

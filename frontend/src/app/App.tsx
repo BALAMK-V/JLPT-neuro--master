@@ -17,10 +17,11 @@ import { NotesPage } from "../pages/NotesPage";
 import { NeuroAnalysisPage } from "../pages/NeuroAnalysisPage";
 import { PaperUploadPage } from "../pages/PaperUploadPage";
 import { ProfilePage } from "../pages/ProfilePage";
+import { UserManagementPage } from "../pages/UserManagementPage";
 import { SessionsPage } from "../pages/SessionsPage";
 import { TestsPage } from "../pages/TestsPage";
 import { VocabPage } from "../pages/VocabPage";
-import { LoginForm } from "../components/LoginForm";
+import { AuthPage } from "../pages/AuthPage";
 import { SideMenu } from "../components/SideMenu";
 import { QuickNoteButton } from "../components/QuickNoteButton";
 import { FocusAudioWidget } from "../components/FocusAudioWidget";
@@ -39,6 +40,11 @@ function AppShell() {
   useEffect(() => {
     applyNeuroUiMode(me?.profile.learning_type ?? "balanced", me?.profile.ui_prefs);
   }, [me?.profile.learning_type, me?.profile.ui_prefs]);
+
+  const visibleRoutes = useMemo(
+    () => ROUTES.filter((r) => !r.managementOnly || me?.is_staff),
+    [me?.is_staff]
+  );
 
   const page = useMemo(() => {
     switch (route) {
@@ -71,7 +77,7 @@ function AppShell() {
       case "jlptExam":
         return <JLPTExamPage />;
       case "paperUpload":
-        return <PaperUploadPage />;
+        return me?.is_staff ? <PaperUploadPage /> : <DashboardPage />;
       case "notes":
         return <NotesPage />;
       case "sessions":
@@ -83,33 +89,21 @@ function AppShell() {
       case "profile":
         return <ProfilePage />;
       case "imports":
-        return <ImportsPage />;
+        return me?.is_staff ? <ImportsPage /> : <DashboardPage />;
+      case "userManagement":
+        return me?.is_staff ? <UserManagementPage /> : <DashboardPage />;
       default:
         return <DashboardPage />;
     }
-  }, [route]);
+  }, [route, me?.is_staff]);
 
   if (!me) {
-    return (
-      <div className="app">
-        <header className="topbar">
-          <div className="topbar__title">JLPT Neuro Master</div>
-          <div className="topbar__meta">
-            <span className="pill">Please sign in</span>
-          </div>
-        </header>
-        <main className="content">
-          <div className="grid">
-            <LoginForm />
-          </div>
-        </main>
-      </div>
-    );
+    return <AuthPage />;
   }
 
   return (
     <div className="app app--authed"><SideMenu
-      routes={ROUTES}
+      routes={visibleRoutes}
       active={route}
       open={menuOpen}
       onClose={() => setMenuOpen(false)}
@@ -131,6 +125,7 @@ function AppShell() {
           <div className="topbar__meta">
             <span className="pill">{me.profile.jlpt_level}</span>
             <span className="pill">{getLearningLabel(me.profile.learning_type, me.profile.ui_prefs)}</span>
+            {me.is_staff && <span className="pill pill--management">Management</span>}
             <button className="btn" onClick={logout} style={{ padding: "6px 10px" }}>
               Logout
             </button>

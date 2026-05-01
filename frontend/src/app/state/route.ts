@@ -21,17 +21,18 @@ export type RouteKey =
   | "aiExamGen"
   | "speakingMode"
   | "sentenceMining"
-  | "multiplayerQuiz";
+  | "multiplayerQuiz"
+  | "userManagement";
 
 export type RouteDef = {
   key: RouteKey;
   label: string;
   description: string;
+  managementOnly?: boolean;
 };
 
 export const ROUTES: RouteDef[] = [
   { key: "dashboard", label: "Dashboard", description: "Overview, streak, due reviews" },
-  { key: "imports", label: "Imports", description: "CSV/ZIP validate + preview + upload" },
   { key: "flashcards", label: "Flashcards", description: "Decks + review (Again/Hard/Good/Easy)" },
   { key: "kanji", label: "Kanji", description: "Learn + review kanji" },
   { key: "vocab", label: "Vocabulary", description: "Learn + review words" },
@@ -45,12 +46,15 @@ export const ROUTES: RouteDef[] = [
   { key: "multiplayerQuiz", label: "Multiplayer Quiz", description: "Race friends on JLPT questions in real-time" },
   { key: "tests", label: "Tests", description: "JLPT-style quizzes + mocks" },
   { key: "jlptExam", label: "JLPT Exam", description: "Full official-style exam simulation N5–N1" },
-  { key: "paperUpload", label: "Upload Paper", description: "Scan & OCR a question paper to import questions" },
   { key: "notes", label: "Notes", description: "Quick, context, session notes" },
   { key: "sessions", label: "Sessions", description: "Goals, progress, summaries" },
   { key: "appearance", label: "Appearance & Personalization", description: "Theme, layout, companion" },
   { key: "neuroAnalysis", label: "Learning Style Check", description: "Personalized study rhythm and screen comfort" },
   { key: "profile", label: "Profile", description: "Learning type, preferences" },
+  // Management-only routes
+  { key: "imports", label: "Imports", description: "CSV/ZIP validate + preview + upload", managementOnly: true },
+  { key: "paperUpload", label: "Upload Paper", description: "Scan & OCR a question paper to import questions", managementOnly: true },
+  { key: "userManagement", label: "User Management", description: "Manage users, roles, and accounts", managementOnly: true },
 ];
 
 function parseHash(): RouteKey {

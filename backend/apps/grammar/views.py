@@ -5,6 +5,8 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.users.permissions import IsManagementUser
+
 from .importer import GrammarImportError, import_grammar_csv
 from .models import GrammarQuestion
 from .serializers import GrammarQuestionSerializer
@@ -29,13 +31,17 @@ class GrammarImportView(APIView):
     tags: optional, semicolon-separated.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsManagementUser]
     parser_classes = [MultiPartParser]
+
+    _MAX_CSV_BYTES = 5 * 1024 * 1024
 
     def post(self, request):  # type: ignore[no-untyped-def]
         csv_file = request.FILES.get("csv_file")
         if not csv_file:
             return Response({"detail": "csv_file is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if csv_file.size > self._MAX_CSV_BYTES:
+            return Response({"detail": "File too large (max 5 MB)."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             result = import_grammar_csv(csv_file.read())

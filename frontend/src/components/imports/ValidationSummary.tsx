@@ -2,14 +2,13 @@ import { useMemo } from "react";
 import type { ValidationError } from "./validators";
 
 export function ValidationSummary({ errors }: { errors: ValidationError[] }) {
-  const top = useMemo(() => errors.slice(0, 10), [errors]);
+  const headerErrors = useMemo(() => errors.filter((e) => e.rowIndex === -1), [errors]);
+  const rowErrors = useMemo(() => errors.filter((e) => e.rowIndex >= 0), [errors]);
+  const top = useMemo(() => rowErrors.slice(0, 10), [rowErrors]);
 
   if (!errors.length) {
     return <div className="notice notice--ok">Looks good. No validation errors found.</div>;
   }
-
-  const headerErrors = errors.filter((e) => e.rowIndex === -1);
-  const rowErrors = errors.filter((e) => e.rowIndex >= 0);
 
   return (
     <div className="notice notice--bad">
@@ -19,7 +18,7 @@ export function ValidationSummary({ errors }: { errors: ValidationError[] }) {
       ))}
       {rowErrors.length ? (
         <div style={{ marginTop: 8, color: "rgba(255,255,255,0.85)" }}>
-          Showing {top.length} of {errors.length} issues:
+          Showing {top.length} of {rowErrors.length} issues:
           <ul className="list" style={{ marginTop: 6 }}>
             {top.map((e, i) => (
               <li key={i}>

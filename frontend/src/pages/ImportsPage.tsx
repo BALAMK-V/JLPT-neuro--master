@@ -41,7 +41,7 @@ export function ImportsPage() {
   const [zipNames, setZipNames] = useState<string[]>([]);
 
   const [errors, setErrors] = useState<ValidationError[]>([]);
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ msg: string; kind: "ok" | "error" } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const validator = useMemo(() => {
@@ -85,14 +85,14 @@ export function ImportsPage() {
 
   const upload = async () => {
     if (!csvFile) {
-      setStatus("Please choose a CSV file first.");
+      setStatus({ msg: "Please choose a CSV file first.", kind: "error" });
       return;
     }
 
     const currentErrors = recomputeErrors(csvHeaders, csvRows, zipNames);
     setErrors(currentErrors);
     if (currentErrors.length) {
-      setStatus("Fix validation errors before uploading.");
+      setStatus({ msg: "Fix validation errors before uploading.", kind: "error" });
       return;
     }
 
@@ -109,22 +109,22 @@ export function ImportsPage() {
 
       if (tab === "kanji") {
         const res = await apiForm<{ created: number; updated: number }>("/kanji/import/", "POST", form);
-        setStatus(`Uploaded. created=${res.created}, updated=${res.updated}`);
+        setStatus({ msg: `Uploaded. created=${res.created}, updated=${res.updated}`, kind: "ok" });
       } else if (tab === "vocab") {
         const res = await apiForm<{ created: number; updated: number }>("/vocab/import/", "POST", form);
-        setStatus(`Uploaded. created=${res.created}, updated=${res.updated}`);
+        setStatus({ msg: `Uploaded. created=${res.created}, updated=${res.updated}`, kind: "ok" });
       } else if (tab === "listening") {
         const res = await apiForm<{ created: number }>("/listening/import/", "POST", form);
-        setStatus(`Uploaded listening questions. created=${res.created}`);
+        setStatus({ msg: `Uploaded listening questions. created=${res.created}`, kind: "ok" });
       } else if (tab === "reading") {
         const res = await apiForm<{ created_passages: number; created_questions: number }>("/reading/import/", "POST", form);
-        setStatus(`Uploaded reading. passages=${res.created_passages}, questions=${res.created_questions}`);
+        setStatus({ msg: `Uploaded reading. passages=${res.created_passages}, questions=${res.created_questions}`, kind: "ok" });
       } else {
         const res = await apiForm<{ created: number }>("/grammar/import/", "POST", form);
-        setStatus(`Uploaded grammar. created=${res.created}`);
+        setStatus({ msg: `Uploaded grammar. created=${res.created}`, kind: "ok" });
       }
     } catch (e: any) {
-      setStatus(String(e?.message ?? e));
+      setStatus({ msg: String(e?.message ?? e), kind: "error" });
     } finally {
       setBusy(false);
     }
@@ -132,7 +132,7 @@ export function ImportsPage() {
 
   const uploadZipOnly = async () => {
     if (!zipFile) {
-      setStatus("Please choose an audio ZIP first.");
+      setStatus({ msg: "Please choose an audio ZIP first.", kind: "error" });
       return;
     }
 
@@ -143,10 +143,10 @@ export function ImportsPage() {
       form.append("audio_zip", zipFile, zipFile.name);
       const res = await apiForm<{ saved: string[]; count: number }>("/listening/audio/import/", "POST", form);
       setZipNames(res.saved);
-      setStatus(`Audio ZIP uploaded. Files saved: ${res.count}`);
+      setStatus({ msg: `Audio ZIP uploaded. Files saved: ${res.count}`, kind: "ok" });
       setErrors(recomputeErrors(csvHeaders, csvRows, res.saved));
     } catch (e: any) {
-      setStatus(String(e?.message ?? e));
+      setStatus({ msg: String(e?.message ?? e), kind: "error" });
     } finally {
       setBusy(false);
     }
@@ -211,6 +211,7 @@ export function ImportsPage() {
             <div className="card__title">Optional - Upload audio ZIP and get filename list</div>
             <div className="toolbar">
               <input
+                key={`zip-${tab}`}
                 className="field"
                 type="file"
                 accept=".zip"
@@ -237,6 +238,7 @@ export function ImportsPage() {
           <div className="card__title">Step 2 - Choose CSV</div>
           <div className="toolbar">
             <input
+              key={`csv-${tab}`}
               className="field"
               type="file"
               accept=".csv,text/csv"
@@ -273,6 +275,7 @@ export function ImportsPage() {
             <CsvEditor
               headers={csvHeaders}
               rows={csvRows}
+              errors={errors}
               onChange={(r) => {
                 setCsvRows(r);
                 setErrors(recomputeErrors(csvHeaders, r, zipNames));
@@ -286,7 +289,9 @@ export function ImportsPage() {
         {status ? (
           <div className="card" style={{ gridColumn: "span 12" }}>
             <div className="card__title">Status</div>
-            <pre className="code">{status}</pre>
+            <div className={status.kind === "ok" ? "notice notice--ok" : "notice notice--bad"}>
+              {status.msg}
+            </div>
           </div>
         ) : null}
       </div>

@@ -66,21 +66,25 @@ def import_grammar_csv(file_bytes: bytes) -> GrammarImportResult:
             tags_raw = get(raw, "tags")
             tags = [t.strip() for t in tags_raw.split(";") if t.strip()] if tags_raw else []
 
-            GrammarQuestion.objects.create(
+            prompt_text = get(raw, "prompt")
+            _, was_created = GrammarQuestion.objects.update_or_create(
                 jlpt_level=level,
-                section=section,
-                question_type=qtype,
-                context_text_jp=get(raw, "context_text_jp"),
-                prompt=get(raw, "prompt"),
-                option_a=get(raw, "option_a"),
-                option_b=get(raw, "option_b"),
-                option_c=get(raw, "option_c"),
-                option_d=get(raw, "option_d"),
-                answer=ans,
-                explanation=get(raw, "explanation"),
-                tags=tags,
+                prompt=prompt_text,
+                defaults=dict(
+                    section=section,
+                    question_type=qtype,
+                    context_text_jp=get(raw, "context_text_jp"),
+                    option_a=get(raw, "option_a"),
+                    option_b=get(raw, "option_b"),
+                    option_c=get(raw, "option_c"),
+                    option_d=get(raw, "option_d"),
+                    answer=ans,
+                    explanation=get(raw, "explanation"),
+                    tags=tags,
+                ),
             )
-            created += 1
+            if was_created:
+                created += 1
 
     return GrammarImportResult(created=created)
 

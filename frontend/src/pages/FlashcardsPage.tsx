@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../app/api/client";
 import { apiForm } from "../app/api/form";
 import { getLearningStylePlan } from "../app/learningStyle";
@@ -47,7 +47,7 @@ export function FlashcardsPage() {
       setLeechCount(data.count);
       setLeeches(data.results);
     } catch {
-      // leech count is non-critical
+      // non-critical
     }
   };
 
@@ -116,8 +116,7 @@ export function FlashcardsPage() {
   };
 
   const addCard = async () => {
-    if (!deckId) return;
-    if (selected?.is_locked) return;
+    if (!deckId || selected?.is_locked) return;
     const f = front.trim();
     const b = back.trim();
     if (!f || !b) return;
@@ -137,8 +136,7 @@ export function FlashcardsPage() {
   };
 
   const deleteCard = async (id: number) => {
-    if (!deckId) return;
-    if (selected?.is_locked) return;
+    if (!deckId || selected?.is_locked) return;
     setBusy(true);
     setError(null);
     try {
@@ -152,9 +150,8 @@ export function FlashcardsPage() {
     }
   };
 
-  const importCsv = async (file: File) => {
-    if (!deckId) return;
-    if (selected?.is_locked) return;
+  const importCsv = async (file: File): Promise<string | null> => {
+    if (!deckId || selected?.is_locked) return null;
     setBusy(true);
     setError(null);
     try {
@@ -164,42 +161,47 @@ export function FlashcardsPage() {
       const res = await apiForm<{ created: number; skipped: number }>("/flash/import/", "POST", form);
       await loadCards(deckId);
       await loadDecks();
-      alert(`Imported flashcards. created=${res.created}, skipped=${res.skipped}`);
+      return `Imported ${res.created} card${res.created !== 1 ? "s" : ""}${res.skipped ? `, skipped ${res.skipped}` : ""}.`;
     } catch (e: any) {
       setError(String(e?.message ?? e));
+      return null;
     } finally {
       setBusy(false);
     }
+  };
+
+  const startReview = () => {
+    setMode("review");
+  };
+
+  const exitReview = async () => {
+    setMode("manage");
+    await loadDecks();
   };
 
   return (
     <div>
       <PageHeader title="Flashcards" subtitle={`${plan.label}: ${plan.studyCue}`} />
 
-      {error ? <div className="card">Error: {error}</div> : null}
+      {error ? (
+        <div className="notice notice--bad" style={{ marginBottom: 12 }}>
+          {error}
+        </div>
+      ) : null}
 
       {leechCount > 0 && (
-        <div style={{
-          background: "rgba(248,113,113,0.1)",
-          border: "1px solid rgba(248,113,113,0.35)",
-          borderRadius: 10,
-          padding: "10px 16px",
-          marginBottom: 12,
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-        }}>
-          <span style={{ fontSize: 20 }}>🐛</span>
+        <div className="fc-leech-banner">
+          <span className="fc-leech-banner__icon">⚠</span>
           <div style={{ flex: 1 }}>
             <span style={{ fontWeight: 600, fontSize: 14 }}>
-              You have {leechCount} leech{leechCount > 1 ? "es" : ""} to relearn
+              {leechCount} leech{leechCount > 1 ? "es" : ""} need relearning
             </span>
-            <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, marginLeft: 8 }}>
-              (cards that failed 8+ times — auto-suspended)
+            <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginLeft: 8 }}>
+              cards that failed 8+ times
             </span>
           </div>
           <button className="btn" style={{ fontSize: 12 }} onClick={() => setShowLeeches((v) => !v)}>
-            {showLeeches ? "Hide Leeches" : "View Leeches"}
+            {showLeeches ? "Hide" : "View"}
           </button>
         </div>
       )}
@@ -209,14 +211,11 @@ export function FlashcardsPage() {
           <div className="card__title">Leech Cards</div>
           <div style={{ display: "grid", gap: 8 }}>
             {leeches.map((c) => (
-              <div key={c.id} style={{
-                display: "flex", alignItems: "center", gap: 10,
-                background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: "8px 12px",
-              }}>
+              <div key={c.id} className="fc-leech-row">
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14 }}>{c.front}</div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
-                    {c.lapses} lapses — deck: {decks.find((d) => d.id === c.deck)?.name ?? c.deck}
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>
+                    {c.lapses} lapses · {decks.find((d) => d.id === c.deck)?.name ?? `Deck ${c.deck}`}
                   </div>
                 </div>
                 <button className="btn" style={{ fontSize: 12 }} disabled={busy} onClick={() => unsuspendLeech(c.id)}>
@@ -228,98 +227,139 @@ export function FlashcardsPage() {
         </div>
       )}
 
-      <div className="notice">
-        <strong>Review setup:</strong> this style uses about {plan.flashcardLimit} due cards per pass and a {plan.sessionMinutes}-minute target.
-      </div>
+      {mode === "review" && deckId ? (
+        <ReviewView
+          deckId={deckId}
+          deckName={selected?.name ?? ""}
+          limit={plan.flashcardLimit}
+          onDone={exitReview}
+        />
+      ) : (
+        <div className="grid">
+          {/* ── Deck sidebar ── */}
+          <div className="card" style={{ gridColumn: "span 4" }}>
+            <div className="card__title">My Decks</div>
 
-      <div className="toolbar">
-        <button className={mode === "manage" ? "btn btn--primary" : "btn"} onClick={() => setMode("manage")}>
-          Manage
-        </button>
-        <button className={mode === "review" ? "btn btn--primary" : "btn"} onClick={() => setMode("review")} disabled={!deckId}>
-          Review
-        </button>
-      </div>
-
-      <div className="grid">
-        <div className="card" style={{ gridColumn: "span 4" }}>
-          <div className="card__title">Decks</div>
-          <div style={{ display: "grid", gap: 8 }}>
-            {decks.map((d) => (
-              <button
-                key={d.id}
-                className={d.id === deckId ? "btn btn--active" : "btn"}
-                onClick={() => setDeckId(d.id)}
-                style={{ textAlign: "left" }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                  <div style={{ fontWeight: 900 }}>{d.name}</div>
-                  <span className="pill">{d.jlpt_level}</span>
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                  <span className="pill">{d.deck_type}</span>
-                  <span className="pill">{d.srs_algo ?? "sm2"}</span>
-                  <span className="pill">due {d.due_count}</span>
-                  <span className="pill">cards {d.total_cards}</span>
-                </div>
-              </button>
-            ))}
-            {!decks.length ? <div className="pill">No decks yet</div> : null}
-          </div>
-
-          <div style={{ marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 12 }}>
-            <div style={{ fontWeight: 900, marginBottom: 8 }}>New deck</div>
-            <input className="field field--sm" placeholder="Deck name" value={newDeckName} onChange={(e) => setNewDeckName(e.target.value)} />
-            <div className="toolbar" style={{ marginTop: 8 }}>
-              <select className="field field--sm" value={newDeckType} onChange={(e) => setNewDeckType(e.target.value)} style={{ maxWidth: 120 }}>
-                <option value="kanji">kanji</option>
-                <option value="vocab">vocab</option>
-                <option value="custom">custom</option>
-              </select>
-              <select className="field field--sm" value={newDeckAlgo} onChange={(e) => setNewDeckAlgo(e.target.value as "sm2" | "fsrs")} style={{ maxWidth: 120 }}>
-                <option value="sm2">SM-2</option>
-                <option value="fsrs">FSRS-4.5</option>
-              </select>
-              <button className="btn" disabled={busy} onClick={createDeck}>
-                Create
-              </button>
-            </div>
-          </div>
-
-          {selected ? (
-            <div style={{ marginTop: 12 }}>
-              {selected.is_locked ? (
-                <div className="pill">Default deck (locked)</div>
-              ) : (
-                <button className="btn" disabled={busy} onClick={() => deleteDeck(selected.id)}>
-                  Delete deck
+            <div style={{ display: "grid", gap: 6 }}>
+              {decks.map((d) => (
+                <button
+                  key={d.id}
+                  className={`deck-item${d.id === deckId ? " deck-item--active" : ""}`}
+                  onClick={() => { setDeckId(d.id); setMode("manage"); }}
+                >
+                  <div className="deck-item__row">
+                    <span className="deck-item__name">{d.name}</span>
+                    <span className={`deck-due${d.due_count === 0 ? " deck-due--none" : ""}`}>
+                      {d.due_count}
+                    </span>
+                  </div>
+                  <div className="deck-item__meta">
+                    <span className="pill">{d.deck_type}</span>
+                    <span className="pill">{d.jlpt_level}</span>
+                    <span className="pill">{d.srs_algo ?? "sm2"}</span>
+                  </div>
                 </button>
-              )}
+              ))}
+              {!decks.length ? (
+                <div className="pill">No decks yet — create one below</div>
+              ) : null}
             </div>
-          ) : null}
-        </div>
 
-        <div className="card" style={{ gridColumn: "span 8" }}>
-          {!deckId ? (
-            <div className="pill">Select a deck</div>
-          ) : mode === "manage" ? (
-            <ManageCardsView
-              deck={selected!}
-              cards={cards}
-              busy={busy}
-              onAdd={addCard}
-              onDelete={deleteCard}
-              front={front}
-              back={back}
-              setFront={setFront}
-              setBack={setBack}
-              onImport={importCsv}
-            />
-          ) : (
-            <ReviewView deckId={deckId} limit={plan.flashcardLimit} oneCardAtATime={plan.oneCardAtATime} onDone={() => { setMode("manage"); loadDecks(); }} />
-          )}
+            {selected && (
+              <div style={{ marginTop: 12 }}>
+                <button
+                  className="btn btn--primary"
+                  style={{ width: "100%" }}
+                  disabled={selected.due_count === 0}
+                  onClick={startReview}
+                >
+                  {selected.due_count > 0
+                    ? `Study ${selected.due_count} due card${selected.due_count !== 1 ? "s" : ""}`
+                    : "No cards due"}
+                </button>
+              </div>
+            )}
+
+            {me?.is_staff && (
+              <>
+                <div style={{ marginTop: 16, borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 14 }}>
+                  <div style={{ fontWeight: 700, marginBottom: 8, fontSize: 13 }}>New deck</div>
+                  <input
+                    className="field field--sm"
+                    placeholder="Deck name"
+                    value={newDeckName}
+                    onChange={(e) => setNewDeckName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") createDeck(); }}
+                  />
+                  <div className="toolbar" style={{ marginTop: 8 }}>
+                    <select
+                      className="field field--sm"
+                      value={newDeckType}
+                      onChange={(e) => setNewDeckType(e.target.value)}
+                      style={{ flex: 1 }}
+                    >
+                      <option value="kanji">Kanji</option>
+                      <option value="vocab">Vocab</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                    <select
+                      className="field field--sm"
+                      value={newDeckAlgo}
+                      onChange={(e) => setNewDeckAlgo(e.target.value as "sm2" | "fsrs")}
+                      style={{ flex: 1 }}
+                    >
+                      <option value="sm2">SM-2</option>
+                      <option value="fsrs">FSRS</option>
+                    </select>
+                    <button className="btn" disabled={busy || !newDeckName.trim()} onClick={createDeck}>
+                      Create
+                    </button>
+                  </div>
+                </div>
+
+                {selected && !selected.is_locked && (
+                  <div style={{ marginTop: 10 }}>
+                    <button
+                      className="btn"
+                      style={{ fontSize: 12, color: "var(--bad)", width: "100%" }}
+                      disabled={busy}
+                      onClick={() => deleteDeck(selected.id)}
+                    >
+                      Delete deck
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* ── Main panel ── */}
+          <div className="card" style={{ gridColumn: "span 8" }}>
+            {!deckId ? (
+              <div className="fc-empty">
+                <div className="fc-empty__icon">🗂</div>
+                <div className="fc-empty__title">Select a deck</div>
+                <div className="fc-empty__sub">Choose a deck from the sidebar to start reviewing.</div>
+              </div>
+            ) : (
+              <ManageCardsView
+                deck={selected!}
+                cards={cards}
+                busy={busy}
+                onAdd={addCard}
+                onDelete={deleteCard}
+                front={front}
+                back={back}
+                setFront={setFront}
+                setBack={setBack}
+                onImport={importCsv}
+                onStartReview={startReview}
+                isManagement={me?.is_staff ?? false}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -335,6 +375,8 @@ function ManageCardsView({
   setFront,
   setBack,
   onImport,
+  onStartReview,
+  isManagement,
 }: {
   deck: FlashDeck;
   cards: FlashCard[];
@@ -345,83 +387,154 @@ function ManageCardsView({
   back: string;
   setFront: (v: string) => void;
   setBack: (v: string) => void;
-  onImport: (file: File) => Promise<void>;
+  onImport: (file: File) => Promise<string | null>;
+  onStartReview: () => void;
+  isManagement: boolean;
 }) {
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+
+  const handleImport = async (file: File) => {
+    setImportMsg(null);
+    const msg = await onImport(file);
+    if (msg) setImportMsg(msg);
+  };
+
   return (
     <div>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <div className="card__title" style={{ marginBottom: 0 }}>{deck.name}</div>
-        <span className="pill">{deck.deck_type}</span>
-        <span className="pill">{deck.jlpt_level}</span>
-        {deck.is_locked ? <span className="pill">locked</span> : null}
-      </div>
-
-      <div style={{ marginTop: 10 }} className="notice">
-        {deck.is_locked ? (
-          <>This is a default deck. Cards are auto-generated from Admin Kanji/Vocabulary for this JLPT level.</>
-        ) : (
-          <>Import CSV headers: <code>front, back, tags, kanji_character, vocab_word, vocab_reading</code></>
+      {/* Deck header */}
+      <div className="fc-manage-header">
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span className="card__title" style={{ marginBottom: 0 }}>{deck.name}</span>
+            {deck.is_locked && <span className="pill">system deck</span>}
+          </div>
+          <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+            <span className="pill">{deck.deck_type}</span>
+            <span className="pill">{deck.jlpt_level}</span>
+            <span className="pill">{deck.srs_algo ?? "sm2"}</span>
+            <span className="pill">{deck.total_cards} cards</span>
+            {deck.due_count > 0 ? (
+              <span className="pill" style={{ color: "var(--bad)" }}>{deck.due_count} due</span>
+            ) : null}
+          </div>
+        </div>
+        {deck.due_count > 0 && (
+          <button className="btn btn--primary" onClick={onStartReview} style={{ flexShrink: 0 }}>
+            Study {deck.due_count} due
+          </button>
         )}
       </div>
 
-      {!deck.is_locked ? (
+      {deck.is_locked ? (
+        <div className="notice" style={{ marginTop: 10 }}>
+          This is a system deck. Cards are auto-generated from Kanji/Vocabulary for {deck.jlpt_level}.
+        </div>
+      ) : isManagement ? (
         <>
-          <div className="toolbar">
-            <input className="field field--sm" placeholder="Front" value={front} onChange={(e) => setFront(e.target.value)} />
-            <input className="field field--sm" placeholder="Back" value={back} onChange={(e) => setBack(e.target.value)} />
-            <button className="btn btn--primary" disabled={busy || !front.trim() || !back.trim()} onClick={() => onAdd()}>
-              Add
-            </button>
+          {/* Add card */}
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>Add card</div>
+            <div className="fc-add-row">
+              <textarea
+                className="field fc-add-field"
+                placeholder="Front (question / character)"
+                value={front}
+                rows={2}
+                onChange={(e) => setFront(e.target.value)}
+              />
+              <textarea
+                className="field fc-add-field"
+                placeholder="Back (answer / meaning)"
+                value={back}
+                rows={2}
+                onChange={(e) => setBack(e.target.value)}
+              />
+              <button
+                className="btn btn--primary"
+                disabled={busy || !front.trim() || !back.trim()}
+                onClick={() => onAdd()}
+                style={{ alignSelf: "flex-end" }}
+              >
+                Add
+              </button>
+            </div>
           </div>
 
-          <div className="toolbar" style={{ marginTop: 8 }}>
-            <input
-              className="field field--sm"
-              type="file"
-              accept=".csv,text/csv"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) onImport(f);
-              }}
-            />
+          {/* Import */}
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>Import CSV</div>
+            <div className="toolbar">
+              <input
+                className="field field--sm"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void handleImport(f);
+                }}
+              />
+            </div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", marginTop: 5 }}>
+              Headers: <code>front, back, tags, kanji_character, vocab_word</code>
+            </div>
+            {importMsg ? (
+              <div className="notice notice--ok" style={{ marginTop: 8, fontSize: 13 }}>{importMsg}</div>
+            ) : null}
           </div>
         </>
       ) : null}
 
-      <div className="tablewrap" style={{ marginTop: 12 }}>
-        <table className="table">
-          <thead>
-            <tr>
-              <th style={{ width: 80 }}>ID</th>
-              <th>Front</th>
-              <th>Back</th>
-              <th style={{ width: 120 }}>Due</th>
-              <th style={{ width: 120 }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cards.map((c) => (
-              <tr key={c.id}>
-                <td>{c.id}</td>
-                <td style={{ whiteSpace: "pre-wrap" }}>{c.front}</td>
-                <td style={{ whiteSpace: "pre-wrap", color: "rgba(255,255,255,0.75)" }}>{c.back}</td>
-                <td>{new Date(c.due_at).toLocaleString()}</td>
-                <td>
-                  <button className="btn" disabled={busy} onClick={() => onDelete(c.id)}>
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {!cards.length ? (
-              <tr>
-                <td colSpan={5} style={{ padding: 14, color: "rgba(255,255,255,0.7)" }}>
-                  No cards yet.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+      {/* Card table */}
+      <div style={{ marginTop: 16 }}>
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>
+          Cards ({cards.length})
+        </div>
+        {!cards.length ? (
+          <div className="fc-empty" style={{ padding: "32px 20px" }}>
+            <div className="fc-empty__icon" style={{ fontSize: 36 }}>📭</div>
+            <div className="fc-empty__sub">No cards yet. Add one above or import a CSV.</div>
+          </div>
+        ) : (
+          <div className="tablewrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Front</th>
+                  <th>Back</th>
+                  <th style={{ width: 110 }}>Due</th>
+                  <th style={{ width: 90 }}>Interval</th>
+                  {isManagement && !deck.is_locked ? <th style={{ width: 90 }} /> : null}
+                </tr>
+              </thead>
+              <tbody>
+                {cards.map((c) => (
+                  <tr key={c.id}>
+                    <td style={{ whiteSpace: "pre-wrap", fontWeight: 600 }}>{c.front}</td>
+                    <td style={{ whiteSpace: "pre-wrap", color: "rgba(255,255,255,0.7)" }}>{c.back}</td>
+                    <td style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
+                      {new Date(c.due_at).toLocaleDateString()}
+                    </td>
+                    <td style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
+                      {c.interval_days}d
+                    </td>
+                    {isManagement && !deck.is_locked ? (
+                      <td>
+                        <button
+                          className="btn"
+                          style={{ fontSize: 12, padding: "5px 10px" }}
+                          disabled={busy}
+                          onClick={() => onDelete(c.id)}
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    ) : null}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -429,13 +542,13 @@ function ManageCardsView({
 
 function ReviewView({
   deckId,
+  deckName,
   limit,
-  oneCardAtATime,
   onDone,
 }: {
   deckId: number;
+  deckName: string;
   limit: number;
-  oneCardAtATime: boolean;
   onDone: () => void;
 }) {
   const [queue, setQueue] = useState<FlashCard[]>([]);
@@ -443,14 +556,23 @@ function ReviewView({
   const [showBack, setShowBack] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionDone, setSessionDone] = useState(0);
 
   const current = queue[idx] ?? null;
+
+  // Refs so keyboard handler always sees fresh values
+  const showBackRef = useRef(false);
+  const busyRef = useRef(false);
+  showBackRef.current = showBack;
+  busyRef.current = busy;
 
   const load = async () => {
     setBusy(true);
     setError(null);
     try {
-      const res = await api<{ count: number; results: FlashCard[] }>(`/flash/next/?deck_id=${deckId}&limit=${limit}`);
+      const res = await api<{ count: number; results: FlashCard[] }>(
+        `/flash/next/?deck_id=${deckId}&limit=${limit}`
+      );
       setQueue(res.results);
       setIdx(0);
       setShowBack(false);
@@ -467,11 +589,12 @@ function ReviewView({
   }, [deckId]);
 
   const rate = async (rating: "again" | "hard" | "good" | "easy") => {
-    if (!current) return;
+    if (!current || busyRef.current) return;
     setBusy(true);
     setError(null);
     try {
       await api<FlashCard>("/flash/review/", "POST", { card_id: current.id, rating });
+      setSessionDone((s) => s + 1);
       const nextIdx = idx + 1;
       if (nextIdx >= queue.length) {
         await load();
@@ -486,62 +609,129 @@ function ReviewView({
     }
   };
 
+  // Store rate in a ref so keyboard handler always calls the latest version
+  const rateRef = useRef<(r: "again" | "hard" | "good" | "easy") => Promise<void>>(rate);
+  rateRef.current = rate;
+
+  // Keyboard shortcuts — register once, use refs for live values
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if ((e.key === " " || e.key === "Enter") && !showBackRef.current) {
+        e.preventDefault();
+        setShowBack(true);
+        return;
+      }
+      if (showBackRef.current && !busyRef.current) {
+        if (e.key === "1") void rateRef.current("again");
+        if (e.key === "2") void rateRef.current("hard");
+        if (e.key === "3") { e.preventDefault(); void rateRef.current("good"); }
+        if (e.key === "4") void rateRef.current("easy");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const remaining = queue.length - idx;
+  const total = sessionDone + remaining;
+  const progressPct = total > 0 ? Math.round((sessionDone / total) * 100) : 0;
+
+  if (!busy && !current) {
+    return (
+      <div className="fc-review">
+        <div className="fc-empty" style={{ padding: "60px 20px" }}>
+          <div className="fc-empty__icon">✓</div>
+          <div className="fc-empty__title">All caught up!</div>
+          <div className="fc-empty__sub">
+            {sessionDone > 0
+              ? `You reviewed ${sessionDone} card${sessionDone !== 1 ? "s" : ""} this session.`
+              : "No cards due right now."}
+          </div>
+          <button className="btn btn--primary" onClick={onDone}>
+            Back to Decks
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <div className="card__title" style={{ marginBottom: 0 }}>Review</div>
-        <span className="pill">due {queue.length}</span>
-        <span className="pill">batch {limit}</span>
-        {oneCardAtATime ? <span className="pill">single-card flow</span> : null}
-        <button className="btn" onClick={onDone}>
-          Back
+    <div className="fc-review">
+      {/* Top bar */}
+      <div className="fc-review__header">
+        <button className="btn" onClick={onDone} style={{ flexShrink: 0 }}>
+          ← {deckName}
         </button>
-        <button className="btn" disabled={busy} onClick={() => load()}>
-          Refresh
+        <div className="fc-progress">
+          <div className="fc-progress__track">
+            <div className="fc-progress__bar" style={{ width: `${progressPct}%` }} />
+          </div>
+          <span className="fc-progress__label">
+            {sessionDone} reviewed · {remaining} remaining
+          </span>
+        </div>
+        <button className="btn" disabled={busy} onClick={load} style={{ flexShrink: 0 }}>
+          ↺
         </button>
       </div>
 
-      {error ? <div className="error" style={{ marginTop: 10 }}>{error}</div> : null}
-      {busy ? <div className="pill" style={{ marginTop: 10 }}>Working...</div> : null}
-
-      {!current ? (
-        <div className="card" style={{ marginTop: 12, boxShadow: "none" }}>
-          No due cards right now.
+      {error ? (
+        <div className="notice notice--bad" style={{ width: "100%", maxWidth: 640 }}>
+          {error}
         </div>
-      ) : (
-        <div className="card" style={{ marginTop: 12, boxShadow: "none" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-            <span className="pill">#{current.id}</span>
-            <span className="pill">EF {current.ease_factor.toFixed(2)}</span>
-            <span className="pill">int {current.interval_days}d</span>
-          </div>
+      ) : null}
 
-          <div style={{ marginTop: 12, fontWeight: 900 }}>Front</div>
-          <div style={{ whiteSpace: "pre-wrap", marginTop: 8 }}>{current.front}</div>
+      {busy && !current ? (
+        <div className="fc-card">
+          <div className="fc-card__front" style={{ color: "rgba(255,255,255,0.3)", fontSize: "1.2rem" }}>
+            Loading...
+          </div>
+        </div>
+      ) : current ? (
+        <div className={`fc-card${showBack ? " fc-card--flipped" : ""}`}>
+          <div className="fc-card__front">{current.front}</div>
 
           {showBack ? (
             <>
-              <div style={{ marginTop: 12, fontWeight: 900 }}>Back</div>
-              <div style={{ whiteSpace: "pre-wrap", marginTop: 8, color: "rgba(255,255,255,0.8)" }}>{current.back}</div>
+              <div className="fc-divider" />
+              <div className="fc-card__back">{current.back}</div>
             </>
           ) : null}
 
-          <div className="toolbar" style={{ marginTop: 12 }}>
-            {!showBack ? (
-              <button className="btn btn--primary" onClick={() => setShowBack(true)}>
-                Show answer
-              </button>
-            ) : (
-              <>
-                <button className="btn" disabled={busy} onClick={() => rate("again")}>Again</button>
-                <button className="btn" disabled={busy} onClick={() => rate("hard")}>Hard</button>
-                <button className="btn btn--primary" disabled={busy} onClick={() => rate("good")}>Good</button>
-                <button className="btn" disabled={busy} onClick={() => rate("easy")}>Easy</button>
-              </>
-            )}
+          <div className="fc-card__meta">
+            {current.interval_days > 0 ? `${current.interval_days}d interval · ` : "new · "}
+            EF {current.ease_factor.toFixed(2)}
           </div>
         </div>
-      )}
+      ) : null}
+
+      {/* Action buttons */}
+      {current && !showBack ? (
+        <button className="btn btn--primary fc-show-btn" onClick={() => setShowBack(true)}>
+          Show Answer <span className="fc-kbd">Space</span>
+        </button>
+      ) : current && showBack ? (
+        <div className="fc-ratings">
+          <button className="fc-rating fc-rating--again" disabled={busy} onClick={() => void rate("again")}>
+            <span>Again</span>
+            <kbd>1</kbd>
+          </button>
+          <button className="fc-rating fc-rating--hard" disabled={busy} onClick={() => void rate("hard")}>
+            <span>Hard</span>
+            <kbd>2</kbd>
+          </button>
+          <button className="fc-rating fc-rating--good" disabled={busy} onClick={() => void rate("good")}>
+            <span>Good</span>
+            <kbd>3</kbd>
+          </button>
+          <button className="fc-rating fc-rating--easy" disabled={busy} onClick={() => void rate("easy")}>
+            <span>Easy</span>
+            <kbd>4</kbd>
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
