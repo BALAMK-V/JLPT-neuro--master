@@ -313,37 +313,35 @@ function ReviewView({
           tabIndex={0}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!flipped) setFlipped(true); } }}
         >
-          <div className="fc-anki-inner">
-            {/* Front face */}
-            <div className="fc-anki-front">
-              <div className="fc-anki-front__content">
-                {busy && !current ? (
-                  <span className="ui-meta">Loading…</span>
-                ) : current ? (
-                  <>
-                    <div className="fc-anki-front__text">{current.front}</div>
-                    <div className="fc-anki-hint">Press Space / tap to reveal</div>
-                  </>
-                ) : null}
-              </div>
-              <div className="fc-anki-card__meta">
-                {current ? (
-                  <>
-                    {current.interval_days > 0 ? `${current.interval_days}d` : "new"}
-                    {" · "}EF {current.ease_factor.toFixed(2)}
-                    {current.tags?.length ? ` · ${current.tags.join(", ")}` : ""}
-                  </>
-                ) : null}
-              </div>
+          {/* Front face */}
+          <div className="fc-anki-front">
+            <div className="fc-anki-front__content">
+              {busy && !current ? (
+                <span className="ui-meta">Loading…</span>
+              ) : current ? (
+                <>
+                  <div className="fc-anki-front__text">{current.front}</div>
+                  <div className="fc-anki-hint">Press Space / tap to reveal</div>
+                </>
+              ) : null}
             </div>
+            <div className="fc-anki-card__meta">
+              {current ? (
+                <>
+                  {current.interval_days > 0 ? `${current.interval_days}d` : "new"}
+                  {" · "}EF {current.ease_factor.toFixed(2)}
+                  {current.tags?.length ? ` · ${current.tags.join(", ")}` : ""}
+                </>
+              ) : null}
+            </div>
+          </div>
 
-            {/* Back face (shown when flipped) */}
-            <div className="fc-anki-back">
-              <div className="fc-anki-back__content">
-                <div className="fc-anki-back__front-echo">{current?.front}</div>
-                <div className="fc-anki-divider" />
-                <div className="fc-anki-back__text">{current?.back}</div>
-              </div>
+          {/* Back face */}
+          <div className="fc-anki-back">
+            <div className="fc-anki-back__content">
+              <div className="fc-anki-back__front-echo">{current?.front}</div>
+              <div className="fc-anki-divider" />
+              <div className="fc-anki-back__text">{current?.back}</div>
             </div>
           </div>
         </div>
@@ -399,6 +397,7 @@ export function FlashcardsPage() {
   const [leechCount, setLeechCount] = useState(0);
   const [showLeeches, setShowLeeches] = useState(false);
   const [leeches, setLeeches] = useState<FlashCard[]>([]);
+  const [sessionLimit, setSessionLimit] = useState<number>(plan.flashcardLimit);
 
   const selected = decks.find((d) => d.id === deckId) ?? null;
 
@@ -471,7 +470,7 @@ export function FlashcardsPage() {
       <ReviewView
         deckId={deckId}
         deckName={selected?.name ?? ""}
-        limit={plan.flashcardLimit}
+        limit={sessionLimit}
         onDone={async () => { setMode("manage"); await loadDecks(); }}
       />
     );
@@ -546,14 +545,28 @@ export function FlashcardsPage() {
           </div>
 
           {selected && (
-            <button
-              className="btn btn--primary"
-              style={{ width: "100%", marginTop: 12 }}
-              disabled={selected.due_count === 0}
-              onClick={() => setMode("review")}
-            >
-              {selected.due_count > 0 ? `Study ${selected.due_count} due` : "All caught up"}
-            </button>
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+              <div className="fc-session-limit">
+                <label className="fc-session-limit__label">Cards / session</label>
+                <select
+                  className="field fc-session-limit__select"
+                  value={sessionLimit}
+                  onChange={(e) => setSessionLimit(Number(e.target.value))}
+                >
+                  {[5, 10, 15, 20, 25, 30, 50, 100].map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                className="btn btn--primary"
+                style={{ width: "100%" }}
+                disabled={selected.due_count === 0}
+                onClick={() => setMode("review")}
+              >
+                {selected.due_count > 0 ? `Study ${selected.due_count} due` : "All caught up"}
+              </button>
+            </div>
           )}
 
           {me?.is_staff && selected && !selected.is_locked && (

@@ -1,5 +1,13 @@
-﻿jlpt_level,section,question_type,context_text_jp,prompt,option_a,option_b,option_c,option_d,answer,explanation,tags
-N2,bunpo_form,fill_blank,"会議は予定より早く終わった。","会議が早く終わったので、残業しない（　）なった。","ことに","ことが","ことを","ことは",A,"〜ことになる = it ended up that...","koto_ni_naru"
-N2,bunpo_form,fill_blank,"来月から毎朝ジョギングする。","健康のために、毎朝走る（　）した。","ことに","ことを","ことが","ことは",A,"〜ことにする = decide to...","koto_ni_suru"
-N2,bunpo_form,choose,"今は忙しい。","今日は手伝う（　）。","わけにはいかない","ことはない","ようにする","にちがいない",A,"〜わけにはいかない = can’t do","wake_niwa_ikanai"
-N2,text_grammar,choose,"電車が遅れているため、到着が30分ほど遅れる見込みです。","最も近い意味はどれですか。","30分早く着く","30分ぐらい遅くなる","30分だけ止まる","30分で着く",B,"到着が遅れる見込み = likely to arrive late","okure_mikomi"
+jlpt_level,section,question_type,context_text_jp,prompt,option_a,option_b,option_c,option_d,answer,explanation,tags
+N2,bunpo_form,fill_blank,毎朝ジョギングすると決めた。,健康のために毎朝走る（　）した。,ことに,ことを,ことが,ことは,A,〜ことにする = decide to do,koto_ni_suru
+N2,bunpo_form,fill_blank,会議は予定より早く終わった。,残業しない（　）になった。,ことに,ことを,ことが,ことは,A,〜ことになる = it ended up that,koto_ni_naru
+N2,bunpo_form,choose,今は非常に忙しい。,今日は手伝う（　）。,わけにはいかない,ことはない,ようにする,にちがいない,A,〜わけにはいかない = cannot possibly do,wake_niwa_ikanai
+N2,bunpo_form,fill_blank,彼は約束を守らなかった。,彼が来ない（　）がない。,わけ,はず,こと,もの,A,〜わけがない = there is no reason,wake_ga_nai
+N2,bunpo_form,choose,山田さんは料理が得意だ。,彼女（　）作った料理はおいしい。,にとって,によって,において,にかわって,B,〜によって = by means of / depending on,ni_yotte
+N2,bunpo_form,fill_blank,この計画は失敗した。,計画が失敗した（　）、原因を調べた。,ものの,うえで,ために,につれて,C,〜ために = for the purpose of / because of,tame_ni
+N2,bunpo_form,choose,彼女は病気（　）、学校に来た。,ながらも,だから,なので,ために,A,〜ながらも = even though; despite,nagara_mo
+N2,bunpo_form,fill_blank,社長の話（　）、売上が増加しているそうだ。,によると,にとって,にかけて,にわたって,A,〜によると = according to,ni_yoru_to
+N2,bunpo_form,choose,この仕事は簡単ではない。,彼（　）できる仕事ではない。,にとって,について,によって,にわたって,A,〜にとって = for (someone); from (someone's) perspective,ni_totte
+N2,text_grammar,choose,電車が遅れているため到着が30分ほど遅れる見込みです。,本文の内容として正しいのは？,30分早く着く,30分ぐらい遅くなる,30分だけ止まる,30分で着く,B,到着が遅れる見込み = likely to arrive late,okure_mikomi
+N2,bunpo_form,fill_blank,このプロジェクトは難しい（　）やりがいがある。,ものの,ながら,から,ために,A,〜ものの = although; even though,mono_no
+N2,sentence_build,reorder,私は,（a）彼女と,（b）話した,（c）初めて,（d）昨日,昨日初めて彼女と話した,昨日話した初めて彼女と,初めて話した昨日彼女と,彼女と昨日初めて話した,A,正しい語順: 昨日 + 初めて + 彼女と + 話した,word_order
