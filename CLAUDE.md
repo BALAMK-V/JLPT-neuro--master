@@ -249,6 +249,232 @@ python manage.py seed_demo
 
 ---
 
+## File Tree
+
+```
+JLPT NEURO MASTER/
+├── docker-compose.yml
+├── VERSION
+├── CLAUDE.md
+├── README.md
+├── docs/
+│   ├── ARCHITECTURE.md
+│   ├── imports/
+│   └── exports/
+│
+├── backend/
+│   ├── manage.py
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   ├── .env  /  .env.example
+│   ├── docker/
+│   │   └── wait_for_db.py
+│   ├── jlpt_neuro_master/          ← Django project package
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   ├── asgi.py
+│   │   ├── wsgi.py
+│   │   └── celery.py
+│   └── apps/
+│       ├── import_utils.py         ← shared CSV/JSON/XLSX parser
+│       ├── assessment/
+│       │   ├── models.py
+│       │   ├── serializers.py
+│       │   ├── views.py
+│       │   └── migrations/0001_initial.py
+│       ├── content/
+│       │   ├── models.py           ← Kanji, KanjiExample, Vocabulary
+│       │   ├── serializers.py
+│       │   ├── views.py            ← import views (kanji, vocab)
+│       │   ├── ai_views.py
+│       │   └── migrations/0001_initial.py
+│       ├── flashcards/
+│       │   ├── models.py           ← Deck, Card, ImportLog
+│       │   ├── serializers.py
+│       │   ├── views.py            ← deck/card CRUD, review, import, import-log
+│       │   ├── fsrs_engine.py      ← FSRS-4.5 algorithm
+│       │   ├── mine_views.py       ← sentence mining
+│       │   └── migrations/0001_initial.py
+│       ├── grammar/
+│       │   ├── models.py
+│       │   ├── serializers.py
+│       │   ├── views.py
+│       │   ├── importer.py
+│       │   ├── ai_views.py
+│       │   └── migrations/0001_initial.py
+│       ├── jlpt_exam/
+│       │   ├── models.py           ← JLPTExam, UserExamSession, ExamResult, …
+│       │   ├── serializers.py
+│       │   ├── views.py
+│       │   ├── ai_generator.py
+│       │   ├── analysis.py
+│       │   └── migrations/0001_initial.py
+│       ├── listening/
+│       │   ├── models.py
+│       │   ├── serializers.py
+│       │   ├── views.py            ← question import + ZIP audio import
+│       │   └── migrations/0001_initial.py
+│       ├── neuro/
+│       │   ├── models.py           ← NeuroQuestion, UserNeuroProfile, …
+│       │   ├── serializers.py
+│       │   ├── views.py
+│       │   ├── scoring.py
+│       │   └── migrations/0001_initial.py
+│       ├── notes/
+│       │   ├── models.py
+│       │   ├── serializers.py
+│       │   ├── views.py
+│       │   └── migrations/0001_initial.py
+│       ├── ocr/
+│       │   ├── models.py           ← QuestionPaper
+│       │   ├── serializers.py
+│       │   ├── views.py
+│       │   ├── processor.py
+│       │   ├── parser.py
+│       │   ├── ai_cleaner.py
+│       │   ├── tasks.py            ← Celery async OCR task
+│       │   └── migrations/0001_initial.py
+│       ├── quiz_room/
+│       │   ├── consumers.py        ← Django Channels WebSocket consumer
+│       │   └── routing.py
+│       ├── reading/
+│       │   ├── models.py           ← ReadingPassage, ReadingQuestion
+│       │   ├── serializers.py
+│       │   ├── views.py
+│       │   ├── importer.py
+│       │   └── migrations/0001_initial.py
+│       ├── tracking/
+│       │   ├── models.py           ← Session, UserProgress
+│       │   ├── serializers.py
+│       │   ├── views.py
+│       │   └── migrations/0001_initial.py
+│       └── users/
+│           ├── models.py           ← UserProfile, UserAppearanceSettings, StudyCompanion
+│           ├── serializers.py      ← MeSerializer (exposes is_staff)
+│           ├── views.py
+│           ├── auth_urls.py
+│           ├── permissions.py      ← IsManagementUser
+│           ├── signals.py
+│           ├── migrations/0001_initial.py
+│           └── management/commands/
+│               ├── seed_demo.py    ← creates admin / bala / demo
+│               └── seed_default_users.py
+│
+└── frontend/
+    ├── public/
+    │   ├── app_icon.png
+    │   └── templates/              ← N2-level sample CSV files
+    │       ├── kanji_import_sample.csv
+    │       ├── vocab_import_sample.csv
+    │       ├── grammar_import_sample.csv
+    │       ├── listening_import_sample.csv
+    │       ├── reading_import_sample.csv
+    │       └── flashcards_import_sample.csv
+    └── src/
+        ├── main.tsx
+        ├── types.ts                ← all shared TypeScript types
+        ├── api/
+        │   └── exam.ts
+        ├── app/
+        │   ├── App.tsx
+        │   ├── api/
+        │   │   ├── client.ts       ← JWT Bearer fetch + auto-refresh
+        │   │   └── form.ts         ← multipart FormData helper
+        │   ├── state/
+        │   │   ├── route.ts        ← hash router + managementOnly flag
+        │   │   ├── user.tsx
+        │   │   └── appearance.tsx
+        │   ├── theme/
+        │   │   └── neuro.ts        ← CSS variable injection per learning style
+        │   ├── labels.ts
+        │   └── learningStyle.ts    ← session card limits + study cues
+        ├── components/
+        │   ├── SideMenu.tsx        ← collapsible nav groups
+        │   ├── PageHeader.tsx
+        │   ├── LoginForm.tsx
+        │   ├── AudioPlayer.tsx
+        │   ├── FocusAudioWidget.tsx
+        │   ├── KanjiCard.tsx
+        │   ├── VocabCard.tsx
+        │   ├── ProgressBar.tsx
+        │   ├── QuickNoteButton.tsx
+        │   ├── ScoreHistoryChart.tsx
+        │   ├── SessionTracker.tsx
+        │   ├── TestScreen.tsx
+        │   ├── appearance/
+        │   │   ├── BackgroundUploader.tsx
+        │   │   ├── ColorPicker.tsx
+        │   │   ├── FontSelector.tsx
+        │   │   ├── PreviewPanel.tsx
+        │   │   └── ThemeToggle.tsx
+        │   ├── companion/
+        │   │   └── CompanionWidget.tsx
+        │   ├── exam/
+        │   │   ├── AnalysisPanel.tsx
+        │   │   ├── ExamAudioPlayer.tsx
+        │   │   ├── ImageViewer.tsx
+        │   │   ├── NavigationPanel.tsx
+        │   │   ├── QuestionCard.tsx
+        │   │   ├── QuestionEditor.tsx
+        │   │   ├── ResultDashboard.tsx
+        │   │   └── TimerDisplay.tsx
+        │   ├── focus/
+        │   │   └── useBrownNoise.ts
+        │   ├── imports/
+        │   │   ├── CsvEditor.tsx
+        │   │   ├── ValidationSummary.tsx
+        │   │   ├── csv.ts
+        │   │   └── validators.ts
+        │   ├── neuro/
+        │   │   ├── QuestionCard.tsx
+        │   │   ├── ResultScreen.tsx
+        │   │   ├── TreeVisualization.tsx
+        │   │   └── sound.ts
+        │   ├── reading/
+        │   │   ├── ReadingMcq.tsx
+        │   │   └── ReadingPassageView.tsx
+        │   └── ui/                 ← shared primitives
+        │       ├── index.ts
+        │       ├── Badge.tsx
+        │       ├── Divider.tsx
+        │       ├── EmptyState.tsx
+        │       ├── FormField.tsx
+        │       ├── Modal.tsx
+        │       ├── Notice.tsx
+        │       ├── SectionHeader.tsx
+        │       ├── Stack.tsx
+        │       └── Text.tsx
+        ├── pages/
+        │   ├── AIExamGeneratorPage.tsx
+        │   ├── AppearanceSettingsPage.tsx
+        │   ├── AuthPage.tsx
+        │   ├── DashboardPage.tsx
+        │   ├── ExamResultPage.tsx
+        │   ├── FlashcardsPage.tsx
+        │   ├── GrammarCheckPage.tsx
+        │   ├── GrammarPage.tsx
+        │   ├── ImportsPage.tsx
+        │   ├── JLPTExamPage.tsx
+        │   ├── KanjiPage.tsx
+        │   ├── ListeningPage.tsx
+        │   ├── MultiplayerQuizPage.tsx
+        │   ├── NeuroAnalysisPage.tsx
+        │   ├── NotesPage.tsx
+        │   ├── PaperUploadPage.tsx
+        │   ├── ProfilePage.tsx
+        │   ├── ReadingPage.tsx
+        │   ├── SentenceMiningPage.tsx
+        │   ├── SessionsPage.tsx
+        │   ├── SpeakingModePage.tsx
+        │   ├── TestsPage.tsx
+        │   ├── UserManagementPage.tsx
+        │   └── VocabPage.tsx
+        └── styles/
+            └── global.css          ← single stylesheet, BEM-like naming
+```
+
+---
+
 ## Learning Styles
 
 Three modes stored in `profile.learning_type` + `profile.ui_prefs.learning_alias`:
