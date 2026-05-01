@@ -3,6 +3,7 @@ import { api } from "../app/api/client";
 import { getLearningStylePlan } from "../app/learningStyle";
 import { useMe } from "../app/state/user";
 import { PageHeader } from "../components/PageHeader";
+import { Caption } from "../components/ui";
 import type { Paginated, Session } from "../types";
 
 export function SessionsPage() {
@@ -31,7 +32,7 @@ export function SessionsPage() {
             <div className="pill">
               {s.progress_count}/{s.goal_target}
             </div>
-            <div style={{ color: "rgba(255,255,255,0.7)", marginTop: 8 }}>{new Date(s.started_at).toLocaleString()}</div>
+            <Caption style={{ marginTop: 8, display: "block" }}>{new Date(s.started_at).toLocaleString()}</Caption>
           </div>
         ))}
         {items.length === 0 && !error ? <div className="card" style={{ gridColumn: "span 12" }}>No sessions yet.</div> : null}

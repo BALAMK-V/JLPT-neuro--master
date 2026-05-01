@@ -4,6 +4,7 @@ import { getLearningStylePlan } from "../app/learningStyle";
 import { useMe } from "../app/state/user";
 import { ScoreHistoryChart } from "../components/ScoreHistoryChart";
 import { PageHeader } from "../components/PageHeader";
+import { Caption, Meta } from "../components/ui";
 import type { Dashboard, ExamHistoryEntry } from "../types";
 
 function recommendationText(rec: Record<string, unknown>, fallbackMinutes: number) {
@@ -71,21 +72,21 @@ export function DashboardPage() {
           <div className="card__title">Flashcard queue</div>
           <div className="metric">
             <div className="metric__label">Due cards (all decks)</div>
-            <div className="metric__value" style={{ color: flashDue > 0 ? "#ffcc66" : "inherit" }}>
+            <div className="metric__value" style={{ color: flashDue > 0 ? "var(--warn)" : "inherit" }}>
               {flashDue}
             </div>
           </div>
           {flashDue > 0 ? (
             <div style={{ marginTop: 10 }}>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", marginBottom: 8 }}>
+              <Caption style={{ marginBottom: 8, display: "block" }}>
                 Cards are due across one or more decks. Open Flashcards to review all at once.
-              </div>
+              </Caption>
               <span className="pill">Unified queue ready</span>
             </div>
           ) : (
-            <div style={{ marginTop: 8, color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
+            <Meta style={{ marginTop: 8, display: "block" }}>
               All caught up — no cards due right now.
-            </div>
+            </Meta>
           )}
         </div>
 
@@ -112,7 +113,7 @@ export function DashboardPage() {
               return (
                 <div className="notice" key={`${copy.title}-${index}`} style={{ marginBottom: 0 }}>
                   <div style={{ fontWeight: 900 }}>{copy.title}</div>
-                  <div style={{ color: "rgba(255,255,255,0.72)", marginTop: 6 }}>{copy.detail}</div>
+                  <Caption style={{ marginTop: 6, display: "block" }}>{copy.detail}</Caption>
                   <div className="pill" style={{ display: "inline-flex", marginTop: 8 }}>{action}</div>
                 </div>
               );
@@ -120,7 +121,7 @@ export function DashboardPage() {
             {!data.recommendations.length ? (
               <div className="notice" style={{ marginBottom: 0 }}>
                 <div style={{ fontWeight: 900 }}>Start a study block</div>
-                <div style={{ color: "rgba(255,255,255,0.72)", marginTop: 6 }}>{plan.studyCue}</div>
+                <Caption style={{ marginTop: 6, display: "block" }}>{plan.studyCue}</Caption>
                 <div className="pill" style={{ display: "inline-flex", marginTop: 8 }}>{plan.sessionMinutes} minutes</div>
               </div>
             ) : null}
@@ -135,14 +136,12 @@ export function DashboardPage() {
               {data.top_unknown_words.map((w) => (
                 <div key={w.id} style={{
                   display: "flex", alignItems: "baseline", gap: 10,
-                  background: "rgba(255,255,255,0.04)", borderRadius: 6, padding: "7px 10px",
+                  background: "var(--surface)", borderRadius: 6, padding: "7px 10px",
                 }}>
-                  <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", minWidth: 28 }}>
-                    #{w.frequency_rank}
-                  </span>
+                  <Meta style={{ fontSize: 12, minWidth: 28 }}>#{w.frequency_rank}</Meta>
                   <span style={{ fontSize: 17, fontWeight: 600 }}>{w.word}</span>
-                  {w.reading && <span style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>{w.reading}</span>}
-                  <span style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", marginLeft: "auto" }}>{w.meaning_en}</span>
+                  {w.reading && <Caption style={{ fontSize: 13 }}>{w.reading}</Caption>}
+                  <Caption style={{ fontSize: 13, marginLeft: "auto" }}>{w.meaning_en}</Caption>
                 </div>
               ))}
             </div>

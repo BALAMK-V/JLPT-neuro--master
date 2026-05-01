@@ -6,6 +6,7 @@ import { QuestionCard } from "../components/neuro/QuestionCard";
 import { ResultScreen } from "../components/neuro/ResultScreen";
 import { TreeVisualization } from "../components/neuro/TreeVisualization";
 import { neuroSounds } from "../components/neuro/sound";
+import { Caption } from "../components/ui";
 import type { NeuroOption, NeuroProfileResult, NeuroQuestion, NeuroTraitScores } from "../types";
 
 type AnswerMap = Record<number, NeuroOption>;
@@ -148,9 +149,9 @@ export function NeuroAnalysisPage() {
           <div className="card" style={{ maxWidth: 440, width: "100%", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: 36, marginBottom: 8 }}>🌱</div>
             <div className="card__title">Your profile has evolved!</div>
-            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, lineHeight: 1.7, margin: "10px 0 16px" }}>
-              Your learning style shifted from <strong style={{ color: "#a78bfa" }}>{prevResultType.replace(/_/g, " ")}</strong> to{" "}
-              <strong style={{ color: "#4ade80" }}>{result.result_type.replace(/_/g, " ")}</strong>.
+            <p className="ui-caption" style={{ fontSize: 14, lineHeight: 1.7, margin: "10px 0 16px" }}>
+              Your learning style shifted from <strong style={{ color: "var(--accent)" }}>{prevResultType.replace(/_/g, " ")}</strong> to{" "}
+              <strong style={{ color: "var(--good)" }}>{result.result_type.replace(/_/g, " ")}</strong>.
               Your session settings and UI have been updated to match.
             </p>
             <button className="btn" onClick={() => setShowProfileDiff(false)}>
@@ -175,10 +176,10 @@ export function NeuroAnalysisPage() {
           <span style={{ fontSize: 22 }}>🔄</span>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 600, fontSize: 14 }}>Time to reassess!</div>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
+            <Caption style={{ fontSize: 13, display: "block" }}>
               It's been {result!.days_since_assessment} days since your last learning profile check.
               A quick retake helps keep your study settings accurate.
-            </div>
+            </Caption>
           </div>
           <button className="btn" onClick={restart}>Retake</button>
         </div>

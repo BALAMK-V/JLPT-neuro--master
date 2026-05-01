@@ -5,6 +5,7 @@ import { useMe } from "../app/state/user";
 import { PageHeader } from "../components/PageHeader";
 import { ReadingMcq } from "../components/reading/ReadingMcq";
 import { ReadingPassageView } from "../components/reading/ReadingPassageView";
+import { Meta } from "../components/ui";
 import type { Paginated, ReadingPassage, ReadingQuestion } from "../types";
 
 export function ReadingPage() {
@@ -129,9 +130,9 @@ export function ReadingPage() {
                 <span className="pill">{p.passage_type}</span>
                 {p.passage_type === plan.readingPattern ? <span className="pill">Good fit</span> : null}
               </div>
-              <div style={{ marginTop: 10, color: "rgba(255,255,255,0.7)", fontSize: 12 }}>
+              <Meta style={{ marginTop: 10 }}>
                 {p.text_jp.slice(0, 160)}{p.text_jp.length > 160 ? "..." : ""}
-              </div>
+              </Meta>
             </button>
           ))}
           {!loading && items.length === 0 ? (

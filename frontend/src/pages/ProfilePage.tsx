@@ -5,6 +5,7 @@ import { PageHeader } from "../components/PageHeader";
 import { useMe } from "../app/state/user";
 import { defaultAliasForType, learningLabelFromAlias, learningTypeFromAlias, type LearningAlias } from "../app/labels";
 import type { LearningType, Me } from "../types";
+import { Caption, Meta, Notice, Divider } from "../components/ui";
 
 function parseApiError(e: unknown): string {
   try {
@@ -142,7 +143,7 @@ export function ProfilePage() {
             <span className="pill">Level: {me.profile.jlpt_level}</span>
           </div>
 
-          <div style={{ marginTop: 12, color: "rgba(255,255,255,0.75)" }}>JLPT level</div>
+          <Caption style={{ marginTop: 12, display: "block" }}>JLPT level</Caption>
           <div className="toolbar" style={{ marginTop: 10 }}>
             <select
               className="field"
@@ -159,7 +160,7 @@ export function ProfilePage() {
             </select>
           </div>
 
-          <div style={{ marginTop: 12, color: "rgba(255,255,255,0.75)" }}>Learning type</div>
+          <Caption style={{ marginTop: 12, display: "block" }}>Learning type</Caption>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
             {(
               [
@@ -184,12 +185,12 @@ export function ProfilePage() {
             })}
           </div>
 
-          {error ? <div style={{ marginTop: 12, color: "rgba(255,92,122,0.95)" }}>{error}</div> : null}
-          {saving ? <div style={{ marginTop: 12, color: "rgba(255,255,255,0.65)" }}>Saving...</div> : null}
+          {error ? <div style={{ marginTop: 12, color: "var(--bad)" }}>{error}</div> : null}
+          {saving ? <Caption style={{ marginTop: 12, display: "block" }}>Saving...</Caption> : null}
 
-          <div style={{ marginTop: 14, color: "rgba(255,255,255,0.6)", fontSize: 12 }}>
+          <Meta style={{ marginTop: 14, display: "block" }}>
             Current plan: {plan.sessionMinutes}-minute sessions, {plan.reminderMinutes}-minute reminders, about {plan.defaultQuestionCount} items per block.
-          </div>
+          </Meta>
         </div>
 
         <div className="card" style={{ gridColumn: "span 12" }}>
@@ -198,9 +199,7 @@ export function ProfilePage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
             <div>
               <div style={{ fontWeight: 600, fontSize: 14 }}>Change password</div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 3 }}>
-                Update your account password
-              </div>
+              <Meta style={{ marginTop: 3 }}>Update your account password</Meta>
             </div>
             <button
               className="btn"
@@ -211,7 +210,7 @@ export function ProfilePage() {
           </div>
 
           {showChangePw && (
-            <div style={{ marginTop: 14, borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 14 }}>
+            <div style={{ marginTop: 14, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
               <ChangePasswordSection
                 onPasswordChanged={() => {
                   setShowChangePw(false);

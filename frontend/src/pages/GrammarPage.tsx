@@ -3,6 +3,7 @@ import { api } from "../app/api/client";
 import { getLearningStylePlan } from "../app/learningStyle";
 import { useMe } from "../app/state/user";
 import { PageHeader } from "../components/PageHeader";
+import { Caption } from "../components/ui";
 import type { GrammarQuestion, Paginated } from "../types";
 
 function GrammarCard({ q }: { q: GrammarQuestion }) {
@@ -21,7 +22,7 @@ function GrammarCard({ q }: { q: GrammarQuestion }) {
       </div>
 
       {q.context_text_jp ? (
-        <div style={{ marginTop: 10, whiteSpace: "pre-wrap", color: "rgba(255,255,255,0.75)" }}>{q.context_text_jp}</div>
+        <Caption style={{ marginTop: 10, whiteSpace: "pre-wrap" }}>{q.context_text_jp}</Caption>
       ) : null}
       <div style={{ marginTop: 10 }}>{q.prompt}</div>
 
@@ -77,7 +78,7 @@ function GrammarCard({ q }: { q: GrammarQuestion }) {
       </div>
 
       {submitted && q.explanation ? (
-        <div style={{ marginTop: 10, color: "rgba(255,255,255,0.75)" }}>{q.explanation}</div>
+        <Caption style={{ marginTop: 10 }}>{q.explanation}</Caption>
       ) : null}
     </div>
   );

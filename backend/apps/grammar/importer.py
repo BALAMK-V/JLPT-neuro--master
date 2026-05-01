@@ -20,25 +20,15 @@ class GrammarImportError(ValueError):
     pass
 
 
-def import_grammar_csv(file_bytes: bytes) -> GrammarImportResult:
-    """Import grammar questions from a single CSV.
+def _import_grammar_rows(rows: list[dict]) -> GrammarImportResult:
+    """Import grammar questions from pre-parsed lowercase-keyed dicts."""
+    if not rows:
+        raise GrammarImportError("File contains no data rows.")
 
-    Raises GrammarImportError with a human-readable message when validation fails.
-    """
-
-    decoded = file_bytes.decode("utf-8-sig")
-    reader = csv.DictReader(io.StringIO(decoded))
-    if not reader.fieldnames:
-        raise GrammarImportError("CSV has no headers.")
-
-    normalized = {h.strip().lower(): h for h in reader.fieldnames if h}
     required = ["prompt", "option_a", "option_b", "option_c", "option_d", "answer"]
-    missing = [h for h in required if h not in normalized]
+    missing = [h for h in required if h not in rows[0]]
     if missing:
-        raise GrammarImportError(f"Missing required headers: {', '.join(missing)}")
-
-    def get(raw: dict[str, str], name: str) -> str:
-        return (raw.get(normalized.get(name, name)) or "").strip()
+        raise GrammarImportError(f"Missing required columns: {', '.join(missing)}")
 
     valid_sections = {c for c, _ in GrammarQuestion.Section.choices}
     valid_types = {c for c, _ in GrammarQuestion.QuestionType.choices}
@@ -46,40 +36,40 @@ def import_grammar_csv(file_bytes: bytes) -> GrammarImportResult:
 
     created = 0
     with transaction.atomic():
-        for idx, raw in enumerate(reader, start=2):
-            ans = get(raw, "answer").upper()
+        for idx, raw in enumerate(rows, start=2):
+            ans = (raw.get("answer") or "").strip().upper()
             if ans not in {"A", "B", "C", "D"}:
-                raise GrammarImportError(f"Invalid answer at line {idx} (must be A-D).")
+                raise GrammarImportError(f"Invalid answer at row {idx} (must be A-D).")
 
-            level = get(raw, "jlpt_level") or JLPTLevel.N2
+            level = (raw.get("jlpt_level") or JLPTLevel.N2).strip()
             if level not in valid_levels:
-                raise GrammarImportError(f"Invalid jlpt_level at line {idx}.")
+                raise GrammarImportError(f"Invalid jlpt_level at row {idx}.")
 
-            section = get(raw, "section") or GrammarQuestion.Section.OTHER
+            section = (raw.get("section") or GrammarQuestion.Section.OTHER).strip()
             if section not in valid_sections:
-                raise GrammarImportError(f"Invalid section at line {idx}.")
+                raise GrammarImportError(f"Invalid section at row {idx}.")
 
-            qtype = get(raw, "question_type") or GrammarQuestion.QuestionType.CHOOSE
+            qtype = (raw.get("question_type") or GrammarQuestion.QuestionType.CHOOSE).strip()
             if qtype not in valid_types:
-                raise GrammarImportError(f"Invalid question_type at line {idx}.")
+                raise GrammarImportError(f"Invalid question_type at row {idx}.")
 
-            tags_raw = get(raw, "tags")
+            tags_raw = (raw.get("tags") or "").strip()
             tags = [t.strip() for t in tags_raw.split(";") if t.strip()] if tags_raw else []
 
-            prompt_text = get(raw, "prompt")
+            prompt_text = (raw.get("prompt") or "").strip()
             _, was_created = GrammarQuestion.objects.update_or_create(
                 jlpt_level=level,
                 prompt=prompt_text,
                 defaults=dict(
                     section=section,
                     question_type=qtype,
-                    context_text_jp=get(raw, "context_text_jp"),
-                    option_a=get(raw, "option_a"),
-                    option_b=get(raw, "option_b"),
-                    option_c=get(raw, "option_c"),
-                    option_d=get(raw, "option_d"),
+                    context_text_jp=(raw.get("context_text_jp") or "").strip(),
+                    option_a=(raw.get("option_a") or "").strip(),
+                    option_b=(raw.get("option_b") or "").strip(),
+                    option_c=(raw.get("option_c") or "").strip(),
+                    option_d=(raw.get("option_d") or "").strip(),
                     answer=ans,
-                    explanation=get(raw, "explanation"),
+                    explanation=(raw.get("explanation") or "").strip(),
                     tags=tags,
                 ),
             )
@@ -88,3 +78,12 @@ def import_grammar_csv(file_bytes: bytes) -> GrammarImportResult:
 
     return GrammarImportResult(created=created)
 
+
+def import_grammar_csv(file_bytes: bytes) -> GrammarImportResult:
+    """Import grammar questions from CSV bytes (kept for backwards-compatibility)."""
+    decoded = file_bytes.decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(decoded))
+    if not reader.fieldnames:
+        raise GrammarImportError("CSV has no headers.")
+    rows = [{k.strip().lower(): (v or "").strip() for k, v in row.items()} for row in reader]
+    return _import_grammar_rows(rows)

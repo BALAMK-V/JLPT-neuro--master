@@ -109,6 +109,13 @@ export function recommendedAppearance(): AppearanceSettings {
   };
 }
 
+function lightBackgroundValue(s: AppearanceSettings) {
+  const raw = s.background_value || {};
+  if (s.background_type === "image") return backgroundValue(s);
+  const angle = Number((raw as Record<string, unknown>).angle ?? 180);
+  return `linear-gradient(${angle}deg, #eef1fa 0%, #e4e8f5 100%)`;
+}
+
 function applyAppearance(s: AppearanceSettings) {
   const root = document.documentElement;
   const mode = s.theme_mode === "auto" ? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : s.theme_mode;
@@ -118,10 +125,10 @@ function applyAppearance(s: AppearanceSettings) {
   root.style.setProperty("--font", fontFamilyValue(s.font_family));
   root.style.setProperty("--app-font-size", fontSizeValue(s.font_size));
   root.style.setProperty("--app-font-weight", fontWeightValue(s.font_weight));
-  root.style.setProperty("--text", s.font_color);
+  root.style.setProperty("--text", mode === "light" ? "rgba(15,17,26,0.9)" : s.font_color);
   root.style.setProperty("--radius", `${s.border_radius}px`);
-  root.style.setProperty("--shadow", shadowValue(s.shadow_level));
-  root.style.setProperty("--app-bg", backgroundValue(s));
+  root.style.setProperty("--shadow", mode === "light" ? "0 4px 20px rgba(15,17,26,0.08)" : shadowValue(s.shadow_level));
+  root.style.setProperty("--app-bg", mode === "light" ? lightBackgroundValue(s) : backgroundValue(s));
   root.style.setProperty("--bg-blur", `${s.blur_level}px`);
 }
 

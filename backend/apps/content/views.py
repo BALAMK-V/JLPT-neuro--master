@@ -1,7 +1,4 @@
-﻿from __future__ import annotations
-
-import csv
-import io
+from __future__ import annotations
 
 from django.db import transaction
 from django_filters.rest_framework import DjangoFilterBackend
@@ -10,6 +7,8 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.flashcards.models import ImportLog
+from apps.import_utils import ImportFileError, parse_import_file
 from apps.users.permissions import IsManagementUser
 
 from .models import JLPTLevel, Kanji, KanjiExample, Vocabulary
@@ -36,59 +35,52 @@ class VocabularyViewSet(viewsets.ModelViewSet):
     ordering_fields = ["id", "word", "jlpt_level"]
 
 
-_MAX_CSV_BYTES = 5 * 1024 * 1024  # 5 MB
-
-
 class KanjiImportView(APIView):
-    """Multipart POST: csv_file
+    """Multipart POST: import_file (CSV, JSON, or XLSX)
 
-    CSV headers (case-insensitive):
-      character, onyomi, kunyomi, meaning_en, jlpt_level, examples
-
-    examples format (optional):
-      "JP|EN; JP|EN; JP" (semicolon-separated; EN optional)
+    Required columns: character, meaning_en
+    Optional columns: onyomi, kunyomi, jlpt_level, examples
+    examples format: "JP|EN; JP|EN; JP" (semicolon-separated; EN optional)
     """
 
     permission_classes = [IsManagementUser]
     parser_classes = [MultiPartParser]
 
     def post(self, request):  # type: ignore[no-untyped-def]
-        csv_file = request.FILES.get("csv_file")
-        if not csv_file:
-            return Response({"detail": "csv_file is required."}, status=status.HTTP_400_BAD_REQUEST)
-        if csv_file.size > _MAX_CSV_BYTES:
-            return Response({"detail": "File too large (max 5 MB)."}, status=status.HTTP_400_BAD_REQUEST)
+        import_file = request.FILES.get("import_file") or request.FILES.get("csv_file")
+        if not import_file:
+            return Response({"detail": "import_file is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        decoded = csv_file.read().decode("utf-8-sig")
-        reader = csv.DictReader(io.StringIO(decoded))
-        if not reader.fieldnames:
-            return Response({"detail": "CSV has no headers."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            rows = parse_import_file(import_file, import_file.name)
+        except ImportFileError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
-        normalized = {h.strip().lower(): h for h in reader.fieldnames if h}
+        if not rows:
+            return Response({"detail": "File has no data rows."}, status=status.HTTP_400_BAD_REQUEST)
+
         required = ["character", "meaning_en"]
-        missing = [h for h in required if h not in normalized]
+        missing = [h for h in required if h not in rows[0]]
         if missing:
-            return Response({"detail": f"Missing required headers: {', '.join(missing)}"}, status=400)
+            return Response({"detail": f"Missing required columns: {', '.join(missing)}"}, status=400)
 
-        def get(raw, name: str) -> str:
-            return (raw.get(normalized.get(name, name)) or "").strip()
-
+        valid_levels = {c for c, _ in JLPTLevel.choices}
         created = 0
         updated = 0
         with transaction.atomic():
-            for idx, raw in enumerate(reader, start=2):
-                ch = get(raw, "character")
+            for idx, raw in enumerate(rows, start=2):
+                ch = (raw.get("character") or "").strip()
                 if not ch or len(ch) != 1:
-                    return Response({"detail": f"Invalid character at line {idx}."}, status=400)
+                    return Response({"detail": f"Invalid character at row {idx}."}, status=400)
 
-                level = get(raw, "jlpt_level") or JLPTLevel.N2
-                if level not in {c for c, _ in JLPTLevel.choices}:
-                    return Response({"detail": f"Invalid jlpt_level at line {idx}."}, status=400)
+                level = (raw.get("jlpt_level") or JLPTLevel.N2).strip()
+                if level not in valid_levels:
+                    return Response({"detail": f"Invalid jlpt_level at row {idx}."}, status=400)
 
                 defaults = {
-                    "onyomi": get(raw, "onyomi"),
-                    "kunyomi": get(raw, "kunyomi"),
-                    "meaning_en": get(raw, "meaning_en"),
+                    "onyomi": (raw.get("onyomi") or "").strip(),
+                    "kunyomi": (raw.get("kunyomi") or "").strip(),
+                    "meaning_en": (raw.get("meaning_en") or "").strip(),
                     "jlpt_level": level,
                 }
 
@@ -98,7 +90,7 @@ class KanjiImportView(APIView):
                 else:
                     updated += 1
 
-                examples_str = get(raw, "examples")
+                examples_str = (raw.get("examples") or "").strip()
                 if examples_str:
                     obj.examples.all().delete()
                     parts = [p.strip() for p in examples_str.split(";") if p.strip()]
@@ -109,58 +101,59 @@ class KanjiImportView(APIView):
                         else:
                             KanjiExample.objects.create(kanji=obj, sentence_jp=part.strip(), sentence_en="")
 
+        ImportLog.objects.create(
+            user=request.user, content_type=ImportLog.ContentType.KANJI,
+            filename=import_file.name, file_format=import_file.name.rsplit(".", 1)[-1].lower() if "." in import_file.name else "csv",
+            rows_imported=created, rows_updated=updated,
+        )
         return Response({"created": created, "updated": updated}, status=status.HTTP_201_CREATED)
 
 
-class VocabularyImportView(APIView):  # management-only
-    """Multipart POST: csv_file
+class VocabularyImportView(APIView):
+    """Multipart POST: import_file (CSV, JSON, or XLSX)
 
-    CSV headers (case-insensitive):
-      word, reading, meaning_en, jlpt_level, related_kanji
-
-    related_kanji format (optional):
-      "勉;強" (semicolon-separated kanji characters)
+    Required columns: word, meaning_en
+    Optional columns: reading, jlpt_level, related_kanji
+    related_kanji format: "勉;強" (semicolon-separated kanji characters)
     """
 
     permission_classes = [IsManagementUser]
     parser_classes = [MultiPartParser]
 
     def post(self, request):  # type: ignore[no-untyped-def]
-        csv_file = request.FILES.get("csv_file")
-        if not csv_file:
-            return Response({"detail": "csv_file is required."}, status=status.HTTP_400_BAD_REQUEST)
-        if csv_file.size > _MAX_CSV_BYTES:
-            return Response({"detail": "File too large (max 5 MB)."}, status=status.HTTP_400_BAD_REQUEST)
+        import_file = request.FILES.get("import_file") or request.FILES.get("csv_file")
+        if not import_file:
+            return Response({"detail": "import_file is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        decoded = csv_file.read().decode("utf-8-sig")
-        reader = csv.DictReader(io.StringIO(decoded))
-        if not reader.fieldnames:
-            return Response({"detail": "CSV has no headers."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            rows = parse_import_file(import_file, import_file.name)
+        except ImportFileError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
-        normalized = {h.strip().lower(): h for h in reader.fieldnames if h}
+        if not rows:
+            return Response({"detail": "File has no data rows."}, status=status.HTTP_400_BAD_REQUEST)
+
         required = ["word", "meaning_en"]
-        missing = [h for h in required if h not in normalized]
+        missing = [h for h in required if h not in rows[0]]
         if missing:
-            return Response({"detail": f"Missing required headers: {', '.join(missing)}"}, status=400)
+            return Response({"detail": f"Missing required columns: {', '.join(missing)}"}, status=400)
 
-        def get(raw, name: str) -> str:
-            return (raw.get(normalized.get(name, name)) or "").strip()
-
+        valid_levels = {c for c, _ in JLPTLevel.choices}
         created = 0
         updated = 0
         with transaction.atomic():
-            for idx, raw in enumerate(reader, start=2):
-                word = get(raw, "word")
+            for idx, raw in enumerate(rows, start=2):
+                word = (raw.get("word") or "").strip()
                 if not word:
-                    return Response({"detail": f"Invalid word at line {idx}."}, status=400)
+                    return Response({"detail": f"Empty word at row {idx}."}, status=400)
 
-                level = get(raw, "jlpt_level") or JLPTLevel.N2
-                if level not in {c for c, _ in JLPTLevel.choices}:
-                    return Response({"detail": f"Invalid jlpt_level at line {idx}."}, status=400)
+                level = (raw.get("jlpt_level") or JLPTLevel.N2).strip()
+                if level not in valid_levels:
+                    return Response({"detail": f"Invalid jlpt_level at row {idx}."}, status=400)
 
-                reading = get(raw, "reading")
+                reading = (raw.get("reading") or "").strip()
                 defaults = {
-                    "meaning_en": get(raw, "meaning_en"),
+                    "meaning_en": (raw.get("meaning_en") or "").strip(),
                     "jlpt_level": level,
                 }
 
@@ -170,10 +163,15 @@ class VocabularyImportView(APIView):  # management-only
                 else:
                     updated += 1
 
-                rel = get(raw, "related_kanji")
+                rel = (raw.get("related_kanji") or "").strip()
                 if rel:
                     chars = [c.strip() for c in rel.replace(",", ";").split(";") if c.strip()]
                     kanji_objs = list(Kanji.objects.filter(character__in=chars))
                     obj.related_kanji.set(kanji_objs)
 
+        ImportLog.objects.create(
+            user=request.user, content_type=ImportLog.ContentType.VOCAB,
+            filename=import_file.name, file_format=import_file.name.rsplit(".", 1)[-1].lower() if "." in import_file.name else "csv",
+            rows_imported=created, rows_updated=updated,
+        )
         return Response({"created": created, "updated": updated}, status=status.HTTP_201_CREATED)

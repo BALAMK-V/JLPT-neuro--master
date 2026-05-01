@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.content.models import Kanji, Vocabulary
 
-from .models import Card, Deck
+from .models import Card, Deck, ImportLog
 
 
 class DeckSerializer(serializers.ModelSerializer):
@@ -68,3 +68,14 @@ class FlashImportSerializer(serializers.Serializer):
     deck_id = serializers.IntegerField(required=False)
     deck_name = serializers.CharField(required=False)
     deck_type = serializers.ChoiceField(choices=[c for c, _ in Deck.DeckType.choices], required=False)
+
+
+class ImportLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ImportLog
+        fields = [
+            "id", "content_type", "filename", "file_format",
+            "rows_imported", "rows_skipped", "rows_updated",
+            "extra", "imported_at",
+        ]
+        read_only_fields = fields

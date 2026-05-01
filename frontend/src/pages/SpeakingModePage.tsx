@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../app/api/client";
 import { useMe } from "../app/state/user";
+import { Caption, Meta } from "../components/ui";
 import type { Paginated, Vocab } from "../types";
 
 type SpeakState = "idle" | "listening" | "result";
@@ -118,7 +119,7 @@ export function SpeakingModePage() {
       <div className="card" style={{ maxWidth: 520, margin: "40px auto", textAlign: "center" }}>
         <div style={{ fontSize: 36, marginBottom: 10 }}>🎤</div>
         <div className="card__title">Speech Recognition Not Available</div>
-        <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 14 }}>
+        <p className="ui-caption" style={{ fontSize: 14 }}>
           Your browser doesn't support the Web Speech API. Try Chrome or Edge.
         </p>
       </div>
@@ -152,12 +153,12 @@ export function SpeakingModePage() {
 
       {/* Card */}
       <div className="card" style={{ textAlign: "center", padding: "32px 24px" }}>
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", marginBottom: 16, textTransform: "uppercase", letterSpacing: 1 }}>
+        <Meta style={{ marginBottom: 16, textTransform: "uppercase", letterSpacing: 1 }}>
           Say the reading of this word
-        </div>
+        </Meta>
 
         <div style={{ fontSize: 48, fontWeight: 700, marginBottom: 8 }}>{current.word}</div>
-        <div style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", marginBottom: 24 }}>{current.meaning_en}</div>
+        <Caption style={{ fontSize: 16, marginBottom: 24, display: "block" }}>{current.meaning_en}</Caption>
 
         {/* Microphone button */}
         {state === "idle" && (
@@ -174,15 +175,15 @@ export function SpeakingModePage() {
           <div>
             <div style={{
               width: 72, height: 72, borderRadius: "50%",
-              background: "rgba(248,113,113,0.2)",
-              border: "2px solid #f87171",
+              background: "rgba(255,92,122,0.2)",
+              border: "2px solid var(--bad)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 28, margin: "0 auto 12px",
               animation: "pulse 1s infinite",
             }}>
               🎤
             </div>
-            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, marginBottom: 12 }}>Listening…</div>
+            <Caption style={{ fontSize: 14, marginBottom: 12, display: "block" }}>Listening…</Caption>
             <button className="btn" onClick={stopListening}>Cancel</button>
           </div>
         )}
@@ -191,20 +192,20 @@ export function SpeakingModePage() {
           <div>
             <div style={{
               fontSize: 28,
-              color: isCorrect ? "#4ade80" : "#f87171",
+              color: isCorrect ? "var(--good)" : "var(--bad)",
               marginBottom: 12,
             }}>
               {isCorrect ? "✓ Correct!" : "✗ Incorrect"}
             </div>
 
             {transcript && (
-              <div style={{ fontSize: 14, color: "rgba(255,255,255,0.65)", marginBottom: 8 }}>
-                You said: <strong style={{ color: "#fff" }}>{transcript}</strong>
-              </div>
+              <Caption style={{ fontSize: 14, marginBottom: 8, display: "block" }}>
+                You said: <strong style={{ color: "var(--text)" }}>{transcript}</strong>
+              </Caption>
             )}
 
             {!isCorrect && (
-              <div style={{ fontSize: 14, color: "rgba(74,222,128,0.9)", marginBottom: 16 }}>
+              <div style={{ fontSize: 14, color: "var(--good)", marginBottom: 16 }}>
                 Correct reading: <strong>{current.reading || current.word}</strong>
               </div>
             )}

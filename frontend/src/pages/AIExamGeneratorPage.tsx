@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api } from "../app/api/client";
 import { setRoute } from "../app/state/route";
 import type { JLPTLevel } from "../api/exam";
+import { Caption, Meta, Notice } from "../components/ui";
 
 type SectionOption = "vocabulary" | "grammar" | "reading" | "full";
 
@@ -53,14 +54,14 @@ export function AIExamGeneratorPage() {
     <div className="grid" style={{ maxWidth: 720, margin: "0 auto" }}>
       <div className="card" style={{ gridColumn: "span 12" }}>
         <div className="card__title">AI Exam Generator</div>
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 20 }}>
+        <p className="ui-caption" style={{ fontSize: 13, marginBottom: 20 }}>
           Claude generates a realistic JLPT practice exam from scratch — no paper upload needed.
           The exam is saved immediately and available for review in the JLPT Exam section.
         </p>
 
         {/* Level picker */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>
+          <div className="ui-meta" style={{ fontSize: 12, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>
             JLPT Level
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -79,7 +80,7 @@ export function AIExamGeneratorPage() {
 
         {/* Section picker */}
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>
+          <div className="ui-meta" style={{ fontSize: 12, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>
             Section
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -88,8 +89,8 @@ export function AIExamGeneratorPage() {
                 key={s.key}
                 onClick={() => setSection(s.key)}
                 style={{
-                  background: section === s.key ? "rgba(167,139,250,0.2)" : "rgba(255,255,255,0.04)",
-                  border: `1px solid ${section === s.key ? "rgba(167,139,250,0.5)" : "rgba(255,255,255,0.12)"}`,
+                  background: section === s.key ? "rgba(124,92,255,0.18)" : "var(--surface)",
+                  border: `1px solid ${section === s.key ? "rgba(124,92,255,0.5)" : "var(--border-mid)"}`,
                   borderRadius: 8,
                   padding: "12px 14px",
                   textAlign: "left",
@@ -97,10 +98,10 @@ export function AIExamGeneratorPage() {
                   transition: "all 0.15s",
                 }}
               >
-                <div style={{ fontWeight: 600, fontSize: 14, color: section === s.key ? "#a78bfa" : "#fff", marginBottom: 4 }}>
+                <div style={{ fontWeight: 600, fontSize: 14, color: section === s.key ? "var(--accent)" : "var(--text)", marginBottom: 4 }}>
                   {s.label}
                 </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{s.desc}</div>
+                <div className="ui-meta" style={{ fontSize: 12 }}>{s.desc}</div>
               </button>
             ))}
           </div>
@@ -116,15 +117,16 @@ export function AIExamGeneratorPage() {
         </button>
 
         {loading && (
-          <p style={{ textAlign: "center", color: "rgba(255,255,255,0.5)", fontSize: 13, marginTop: 12 }}>
+          <p className="ui-meta" style={{ textAlign: "center", fontSize: 13, marginTop: 12 }}>
             This takes 15–30 seconds. Claude is crafting authentic JLPT-style questions…
           </p>
         )}
 
         {error && (
           <div style={{
-            marginTop: 14, color: "#f87171", fontSize: 13,
-            background: "rgba(248,113,113,0.08)", borderRadius: 8, padding: "10px 14px",
+            marginTop: 14, color: "var(--bad)", fontSize: 13,
+            background: "rgba(255,92,122,0.08)", borderRadius: 8, padding: "10px 14px",
+            border: "1px solid rgba(255,92,122,0.2)",
           }}>
             {error}
           </div>
@@ -140,7 +142,7 @@ export function AIExamGeneratorPage() {
             <span className="pill">{result.question_count} questions</span>
             <span className="pill">{result.duration_minutes} min</span>
           </div>
-          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 14, marginBottom: 16 }}>
+          <p className="ui-caption" style={{ fontSize: 14, marginBottom: 16 }}>
             Your exam has been saved and is ready to take. Head to the JLPT Exam section to start it.
           </p>
           <div style={{ display: "flex", gap: 10 }}>

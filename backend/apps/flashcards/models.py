@@ -50,7 +50,6 @@ class Card(models.Model):
 
     deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name="cards")
 
-    # Optional links to global content
     kanji = models.ForeignKey(Kanji, null=True, blank=True, on_delete=models.SET_NULL, related_name="flash_cards")
     vocab = models.ForeignKey(Vocabulary, null=True, blank=True, on_delete=models.SET_NULL, related_name="flash_cards")
 
@@ -60,7 +59,6 @@ class Card(models.Model):
     tags = models.JSONField(default=list, blank=True)
     suspended = models.BooleanField(default=False)
 
-    # SRS scheduling fields (shared by SM-2 and FSRS)
     repetitions = models.PositiveIntegerField(default=0)
     interval_days = models.PositiveIntegerField(default=0)
     ease_factor = models.FloatField(default=2.5)
@@ -69,7 +67,6 @@ class Card(models.Model):
     lapses = models.PositiveIntegerField(default=0)
     last_rating = models.CharField(max_length=10, blank=True)
 
-    # FSRS-4.5 extra fields (null when deck uses SM-2)
     fsrs_stability = models.FloatField(null=True, blank=True)
     fsrs_difficulty = models.FloatField(null=True, blank=True)
     fsrs_state = models.CharField(max_length=15, blank=True, default="")
@@ -118,7 +115,7 @@ class Card(models.Model):
             self.ease_factor = max(1.3, self.ease_factor - 0.2)
             self.due_at = now + timedelta(minutes=10)
             if self.lapses >= 8:
-                self.suspended = True  # auto-leech suspension
+                self.suspended = True
             return
 
         ef = self.ease_factor
@@ -135,3 +132,30 @@ class Card(models.Model):
             self.interval_days = max(1, int(round(self.interval_days * multiplier)))
 
         self.due_at = now + timedelta(days=self.interval_days)
+
+
+class ImportLog(models.Model):
+    class ContentType(models.TextChoices):
+        KANJI = "kanji", "Kanji"
+        VOCAB = "vocab", "Vocabulary"
+        GRAMMAR = "grammar", "Grammar"
+        READING = "reading", "Reading"
+        LISTENING = "listening", "Listening"
+        FLASHCARD = "flashcard", "Flashcard"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="import_logs")
+    content_type = models.CharField(max_length=20, choices=ContentType.choices)
+    filename = models.CharField(max_length=255, blank=True)
+    file_format = models.CharField(max_length=10, blank=True)
+    rows_imported = models.PositiveIntegerField(default=0)
+    rows_skipped = models.PositiveIntegerField(default=0)
+    rows_updated = models.PositiveIntegerField(default=0)
+    extra = models.JSONField(default=dict, blank=True)
+    imported_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-imported_at"]
+        indexes = [models.Index(fields=["user", "-imported_at"])]
+
+    def __str__(self) -> str:
+        return f"ImportLog({self.user_id}, {self.content_type}, {self.imported_at:%Y-%m-%d})"

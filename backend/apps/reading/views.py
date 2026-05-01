@@ -1,11 +1,13 @@
-﻿from rest_framework import permissions, status, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.flashcards.models import ImportLog
+from apps.import_utils import ImportFileError, parse_import_file
 from apps.users.permissions import IsManagementUser
 
-from .importer import ReadingImportError, import_reading_csv
+from .importer import ReadingImportError, _import_reading_rows
 from .models import ReadingPassage, ReadingQuestion
 from .serializers import ReadingPassageSerializer, ReadingQuestionSerializer
 
@@ -28,25 +30,33 @@ class ReadingQuestionViewSet(viewsets.ModelViewSet):
 
 
 class ReadingImportView(APIView):
-    """Multipart POST: csv_file"""
+    """Multipart POST: import_file (CSV, JSON, or XLSX)
+
+    Required columns: passage_title, passage_type, jlpt_level, text_jp,
+                      question, option_a-d, answer
+    Optional columns: text_en, source, tags, order, question_type, explanation
+    """
 
     permission_classes = [IsManagementUser]
     parser_classes = [MultiPartParser]
 
-    _MAX_CSV_BYTES = 5 * 1024 * 1024
-
     def post(self, request):  # type: ignore[no-untyped-def]
-        csv_file = request.FILES.get("csv_file")
-        if not csv_file:
-            return Response({"detail": "csv_file is required."}, status=status.HTTP_400_BAD_REQUEST)
-        if csv_file.size > self._MAX_CSV_BYTES:
-            return Response({"detail": "File too large (max 5 MB)."}, status=status.HTTP_400_BAD_REQUEST)
+        import_file = request.FILES.get("import_file") or request.FILES.get("csv_file")
+        if not import_file:
+            return Response({"detail": "import_file is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            result = import_reading_csv(csv_file.read())
-        except ReadingImportError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            rows = parse_import_file(import_file, import_file.name)
+            result = _import_reading_rows(rows)
+        except (ImportFileError, ReadingImportError) as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
+        ImportLog.objects.create(
+            user=request.user, content_type=ImportLog.ContentType.READING,
+            filename=import_file.name, file_format=import_file.name.rsplit(".", 1)[-1].lower() if "." in import_file.name else "csv",
+            rows_imported=result.created_questions,
+            extra={"passages": result.created_passages},
+        )
         return Response(
             {"created_passages": result.created_passages, "created_questions": result.created_questions},
             status=status.HTTP_201_CREATED,

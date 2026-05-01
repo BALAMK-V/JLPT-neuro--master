@@ -6,6 +6,7 @@ import { FontSelector } from "../components/appearance/FontSelector";
 import { PreviewPanel } from "../components/appearance/PreviewPanel";
 import { ThemeToggle } from "../components/appearance/ThemeToggle";
 import { PageHeader } from "../components/PageHeader";
+import { Caption } from "../components/ui";
 import type { AnimationLevel, LayoutDensity, StudyCompanionSettings } from "../types";
 
 const TEXT_PRESETS = ["#f5f7fb", "#111827", "#1f2937", "#e8fff8", "#fff7d6", "#ffe7ef"];
@@ -122,9 +123,9 @@ export function AppearanceSettingsPage() {
                 </select>
               </label>
             </div>
-            <div style={{ color: "rgba(255,255,255,0.65)", marginTop: 10 }}>
+            <Caption style={{ marginTop: 10, display: "block" }}>
               Drag the companion on screen to move it. Double-click it to trigger a celebration state.
-            </div>
+            </Caption>
           </section>
 
           <div className="toolbar">

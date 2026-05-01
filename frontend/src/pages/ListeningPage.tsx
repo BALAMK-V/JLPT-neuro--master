@@ -3,6 +3,7 @@ import { api, API_BASE } from "../app/api/client";
 import { getLearningStylePlan } from "../app/learningStyle";
 import { useMe } from "../app/state/user";
 import { PageHeader } from "../components/PageHeader";
+import { Caption } from "../components/ui";
 import type { ListeningQuestion, Paginated } from "../types";
 
 function resolveMediaUrl(pathOrUrl: string) {
@@ -96,13 +97,13 @@ export function ListeningPage() {
               {q.section === plan.listeningSection ? <span className="pill">Good fit</span> : null}
             </div>
 
-            <div style={{ marginTop: 10, color: "rgba(255,255,255,0.8)" }}>{q.question}</div>
+            <Caption style={{ marginTop: 10, display: "block" }}>{q.question}</Caption>
 
             {showTranscripts && q.audio_text ? (
-              <div style={{ marginTop: 10, whiteSpace: "pre-wrap", color: "rgba(255,255,255,0.7)" }}>
+              <Caption style={{ marginTop: 10, whiteSpace: "pre-wrap", display: "block" }}>
                 <div style={{ fontWeight: 900, marginBottom: 6 }}>Audio text</div>
                 {q.audio_text}
-              </div>
+              </Caption>
             ) : null}
 
             {q.audio_file ? (
@@ -111,7 +112,7 @@ export function ListeningPage() {
               <div className="pill" style={{ marginTop: 10 }}>No audio</div>
             )}
 
-            {q.explanation ? <div style={{ marginTop: 10, color: "rgba(255,255,255,0.65)" }}>{q.explanation}</div> : null}
+            {q.explanation ? <Caption style={{ marginTop: 10, display: "block" }}>{q.explanation}</Caption> : null}
           </div>
         ))}
         {items.length === 0 && !error ? (

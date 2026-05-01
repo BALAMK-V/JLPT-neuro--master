@@ -1,6 +1,5 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
-import csv
 import io
 import os
 import zipfile
@@ -15,6 +14,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.content.models import JLPTLevel
+from apps.flashcards.models import ImportLog
+from apps.import_utils import ImportFileError, parse_import_file
 from apps.users.permissions import IsManagementUser
 
 from .models import ListeningQuestion
@@ -91,104 +92,92 @@ def _normalize_question_type(raw: str) -> str:
     return mapping.get(raw.strip(), mapping.get(v, v))
 
 
-_MAX_CSV_BYTES = 5 * 1024 * 1024    # 5 MB
+_MAX_FILE_BYTES = 5 * 1024 * 1024   # 5 MB
 _MAX_ZIP_BYTES = 50 * 1024 * 1024   # 50 MB
 
 
 class ListeningImportView(APIView):
-    """
-    Multipart POST:
-      - csv_file: required
-      - audio_zip: optional
+    """Multipart POST: import_file (CSV, JSON, or XLSX) + optional audio_zip
 
-    CSV headers (case-insensitive):
-      audio_file, section, question_type, audio_text, question,
-      option_a, option_b, option_c, option_d, answer, explanation, jlpt_level
-
-    Notes:
-    - section/question_type/audio_text are optional.
-    - section values: kadai, point, gaiyo, sokuji, togo (or Japanese labels).
-    - question_type values: gist, detail, inference, purpose, response.
+    Required columns: audio_file, question, option_a-d, answer
+    Optional columns: section, question_type, audio_text, explanation, jlpt_level
+    section values: kadai, point, gaiyo, sokuji, togo (or Japanese labels).
+    question_type values: gist, detail, inference, purpose, response.
     """
 
     permission_classes = [IsManagementUser]
     parser_classes = [MultiPartParser]
 
     def post(self, request):  # type: ignore[no-untyped-def]
-        csv_file = request.FILES.get("csv_file")
+        import_file = request.FILES.get("import_file") or request.FILES.get("csv_file")
         audio_zip = request.FILES.get("audio_zip")
-        if not csv_file:
-            return Response({"detail": "csv_file is required."}, status=status.HTTP_400_BAD_REQUEST)
-        if csv_file.size > _MAX_CSV_BYTES:
-            return Response({"detail": "CSV file too large (max 5 MB)."}, status=status.HTTP_400_BAD_REQUEST)
+        if not import_file:
+            return Response({"detail": "import_file is required."}, status=status.HTTP_400_BAD_REQUEST)
         if audio_zip and audio_zip.size > _MAX_ZIP_BYTES:
             return Response({"detail": "Audio ZIP too large (max 50 MB)."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            raw_rows = parse_import_file(import_file, import_file.name)
+        except ImportFileError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not raw_rows:
+            return Response({"detail": "File contains no data rows."}, status=400)
+
+        required = ["audio_file", "question", "option_a", "option_b", "option_c", "option_d", "answer"]
+        missing = [h for h in required if h not in raw_rows[0]]
+        if missing:
+            return Response({"detail": f"Missing required columns: {', '.join(missing)}"}, status=400)
 
         audio_bytes = audio_zip.read() if audio_zip else None
         zip_reader = zipfile.ZipFile(io.BytesIO(audio_bytes)) if audio_bytes else None
         zip_names = set(zip_reader.namelist()) if zip_reader else set()
         zip_by_basename = {os.path.basename(n): n for n in zip_names if n and not n.endswith("/")}
 
-        decoded = csv_file.read().decode("utf-8-sig")
-        reader = csv.DictReader(io.StringIO(decoded))
-        if not reader.fieldnames:
-            return Response({"detail": "CSV has no headers."}, status=status.HTTP_400_BAD_REQUEST)
-
-        normalized_headers = {h.strip().lower(): h for h in reader.fieldnames if h}
-        required = ["audio_file", "question", "option_a", "option_b", "option_c", "option_d", "answer"]
-        missing = [h for h in required if h not in normalized_headers]
-        if missing:
-            return Response({"detail": f"Missing required headers: {', '.join(missing)}"}, status=400)
-
         valid_sections = {c for c, _ in ListeningQuestion.Section.choices}
         valid_types = {c for c, _ in ListeningQuestion.QuestionType.choices}
         valid_levels = {c for c, _ in JLPTLevel.choices}
 
         rows: list[ImportRow] = []
-        for idx, raw in enumerate(reader, start=2):
-            def get(name: str) -> str:
-                return (raw.get(normalized_headers.get(name, name)) or "").strip()
-
-            audio_name = get("audio_file")
+        for idx, raw in enumerate(raw_rows, start=2):
+            audio_name = (raw.get("audio_file") or "").strip()
             if audio_name and (audio_name.startswith("/") or ".." in audio_name or "\\" in audio_name):
-                return Response({"detail": f"Unsafe audio_file at CSV line {idx}."}, status=400)
+                return Response({"detail": f"Unsafe audio_file at row {idx}."}, status=400)
 
-            ans = get("answer").upper()
+            ans = (raw.get("answer") or "").strip().upper()
             if ans not in {"A", "B", "C", "D"}:
-                return Response({"detail": f"Invalid answer at CSV line {idx} (must be A-D)."}, status=400)
+                return Response({"detail": f"Invalid answer at row {idx} (must be A-D)."}, status=400)
 
-            level = get("jlpt_level") or JLPTLevel.N2
+            level = (raw.get("jlpt_level") or JLPTLevel.N2).strip()
             if level not in valid_levels:
-                return Response({"detail": f"Invalid jlpt_level at CSV line {idx}."}, status=400)
+                return Response({"detail": f"Invalid jlpt_level at row {idx}."}, status=400)
 
-            section = _normalize_section(get("section"))
+            section = _normalize_section(raw.get("section") or "")
             if section not in valid_sections:
-                return Response({"detail": f"Invalid section at CSV line {idx}."}, status=400)
+                return Response({"detail": f"Invalid section at row {idx}."}, status=400)
 
-            qtype = _normalize_question_type(get("question_type"))
+            qtype = _normalize_question_type(raw.get("question_type") or "")
             if qtype not in valid_types:
-                return Response({"detail": f"Invalid question_type at CSV line {idx}."}, status=400)
+                return Response({"detail": f"Invalid question_type at row {idx}."}, status=400)
 
             if zip_reader and audio_name:
                 if audio_name not in zip_names and audio_name not in zip_by_basename:
-                    return Response({"detail": f"Audio '{audio_name}' not found in ZIP (line {idx})."}, status=400)
+                    return Response({"detail": f"Audio '{audio_name}' not found in ZIP (row {idx})."}, status=400)
 
-            rows.append(
-                ImportRow(
-                    audio_file=audio_name,
-                    section=section,
-                    question_type=qtype,
-                    audio_text=get("audio_text"),
-                    question=get("question"),
-                    option_a=get("option_a"),
-                    option_b=get("option_b"),
-                    option_c=get("option_c"),
-                    option_d=get("option_d"),
-                    answer=ans,
-                    explanation=get("explanation"),
-                    jlpt_level=level,
-                )
-            )
+            rows.append(ImportRow(
+                audio_file=audio_name,
+                section=section,
+                question_type=qtype,
+                audio_text=(raw.get("audio_text") or "").strip(),
+                question=(raw.get("question") or "").strip(),
+                option_a=(raw.get("option_a") or "").strip(),
+                option_b=(raw.get("option_b") or "").strip(),
+                option_c=(raw.get("option_c") or "").strip(),
+                option_d=(raw.get("option_d") or "").strip(),
+                answer=ans,
+                explanation=(raw.get("explanation") or "").strip(),
+                jlpt_level=level,
+            ))
 
         created = 0
         with transaction.atomic():
@@ -226,6 +215,11 @@ class ListeningImportView(APIView):
 
                 created += 1
 
+        ImportLog.objects.create(
+            user=request.user, content_type=ImportLog.ContentType.LISTENING,
+            filename=import_file.name, file_format=import_file.name.rsplit(".", 1)[-1].lower() if "." in import_file.name else "csv",
+            rows_imported=created,
+        )
         return Response({"created": created}, status=status.HTTP_201_CREATED)
 
 

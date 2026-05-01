@@ -32,4 +32,4 @@ COPY backend/ /app/
 
 EXPOSE 8000
 
-CMD ["sh", "-lc", "python docker/wait_for_db.py && python manage.py migrate --run-syncdb --noinput && python manage.py seed_default_users && python manage.py runserver 0.0.0.0:8000"]
+CMD ["sh", "-lc", "python docker/wait_for_db.py && python manage.py migrate --run-syncdb --noinput && python manage.py seed_demo && python manage.py runserver 0.0.0.0:8000"]

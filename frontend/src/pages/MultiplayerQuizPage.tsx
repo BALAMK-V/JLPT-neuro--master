@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { JLPTLevel } from "../api/exam";
+import { Caption, Meta } from "../components/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -146,19 +147,19 @@ export function MultiplayerQuizPage() {
       <div style={{ maxWidth: 520, margin: "0 auto" }}>
         <div className="card">
           <div className="card__title">Multiplayer Quiz</div>
-          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 20 }}>
+          <p className="ui-caption" style={{ fontSize: 13, marginBottom: 20 }}>
             Race 2–4 players on JLPT questions in real-time. Requires the backend to be
             running via <code>daphne jlpt_neuro_master.asgi:application</code>.
           </p>
 
           {error && (
-            <div style={{ color: "#f87171", fontSize: 13, padding: "8px 12px", background: "rgba(248,113,113,0.1)", borderRadius: 6, marginBottom: 16 }}>
+            <div style={{ color: "var(--bad)", fontSize: 13, padding: "8px 12px", background: "rgba(255,92,122,0.1)", border: "1px solid rgba(255,92,122,0.2)", borderRadius: 6, marginBottom: 16 }}>
               {error}
             </div>
           )}
 
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>
+            <div className="ui-meta" style={{ fontSize: 12, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>
               Create a room
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
@@ -173,8 +174,8 @@ export function MultiplayerQuizPage() {
             </button>
           </div>
 
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 16 }}>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+            <div className="ui-meta" style={{ fontSize: 12, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>
               Join a room
             </div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -202,7 +203,7 @@ export function MultiplayerQuizPage() {
     return (
       <div style={{ maxWidth: 520, margin: "0 auto" }}>
         <div className="card" style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 4, textTransform: "uppercase", letterSpacing: 1 }}>
+          <div className="ui-meta" style={{ fontSize: 12, marginBottom: 4, textTransform: "uppercase", letterSpacing: 1 }}>
             Room code — share with friends
           </div>
           <div style={{ fontSize: 48, fontWeight: 900, letterSpacing: 10, marginBottom: 8 }}>{roomCode}</div>
@@ -228,7 +229,7 @@ export function MultiplayerQuizPage() {
               Start Game
             </button>
           )}
-          {!isHost && <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 14 }}>Waiting for host to start…</div>}
+          {!isHost && <Caption style={{ fontSize: 14 }}>Waiting for host to start…</Caption>}
         </div>
       </div>
     );
@@ -249,7 +250,7 @@ export function MultiplayerQuizPage() {
             ))}
           </div>
           {gameState === "playing" && (
-            <span className="pill" style={{ color: timeLeft <= 5 ? "#f87171" : undefined }}>
+            <span className="pill" style={{ color: timeLeft <= 5 ? "var(--bad)" : undefined }}>
               ⏱ {timeLeft}s
             </span>
           )}
@@ -257,9 +258,9 @@ export function MultiplayerQuizPage() {
 
         <div className="card">
           {question.passage && (
-            <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, marginBottom: 14, padding: "10px", background: "rgba(255,255,255,0.04)", borderRadius: 6, lineHeight: 1.8 }}>
+            <Caption style={{ fontSize: 14, marginBottom: 14, padding: "10px", background: "var(--surface)", borderRadius: 6, lineHeight: 1.8, display: "block" }}>
               {question.passage}
-            </div>
+            </Caption>
           )}
 
           <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 16, lineHeight: 1.6 }}>
@@ -268,13 +269,13 @@ export function MultiplayerQuizPage() {
 
           <div style={{ display: "grid", gap: 8 }}>
             {question.options.map((opt) => {
-              let bg = "rgba(255,255,255,0.06)";
-              let border = "rgba(255,255,255,0.12)";
+              let bg = "var(--surface)";
+              let border = "var(--border-mid)";
               if (revealCorrectId !== undefined) {
-                if (opt.id === revealCorrectId) { bg = "rgba(74,222,128,0.15)"; border = "#4ade80"; }
-                else if (opt.id === selectedOption) { bg = "rgba(248,113,113,0.15)"; border = "#f87171"; }
+                if (opt.id === revealCorrectId) { bg = "rgba(36,209,143,0.15)"; border = "var(--good)"; }
+                else if (opt.id === selectedOption) { bg = "rgba(255,92,122,0.15)"; border = "var(--bad)"; }
               } else if (opt.id === selectedOption) {
-                bg = "rgba(167,139,250,0.2)"; border = "#a78bfa";
+                bg = "rgba(124,92,255,0.2)"; border = "var(--accent)";
               }
               return (
                 <button
@@ -287,7 +288,7 @@ export function MultiplayerQuizPage() {
                     borderRadius: 8,
                     padding: "12px 14px",
                     textAlign: "left",
-                    color: "#fff",
+                    color: "var(--text)",
                     cursor: selectedOption !== null || gameState === "reveal" ? "default" : "pointer",
                     transition: "all 0.15s",
                     display: "flex",
@@ -302,9 +303,9 @@ export function MultiplayerQuizPage() {
           </div>
 
           {gameState === "reveal" && reveal && (
-            <div style={{ marginTop: 14, padding: "10px 14px", background: "rgba(255,255,255,0.04)", borderRadius: 8, fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.6 }}>
+            <Caption style={{ marginTop: 14, padding: "10px 14px", background: "var(--surface)", borderRadius: 8, fontSize: 13, lineHeight: 1.6, display: "block" }}>
               <strong>Explanation: </strong>{reveal.explanation || "—"}
-            </div>
+            </Caption>
           )}
         </div>
       </div>
@@ -328,7 +329,7 @@ export function MultiplayerQuizPage() {
             {finalScores.map((p, i) => (
               <div key={p.name} style={{
                 display: "flex", justifyContent: "space-between",
-                background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: "10px 14px",
+                background: "var(--surface)", borderRadius: 8, padding: "10px 14px",
               }}>
                 <span>{i + 1}. {p.name}</span>
                 <span>{p.score} pts</span>

@@ -8,7 +8,7 @@ from rest_framework.routers import DefaultRouter
 from apps.assessment.views import TestQuestionViewSet, TestViewSet
 from apps.content.ai_views import VocabExplainView
 from apps.content.views import KanjiImportView, KanjiViewSet, VocabularyImportView, VocabularyViewSet
-from apps.flashcards.views import CardViewSet, DeckViewSet, FlashDueAllView, FlashImportView, FlashLeechesView, FlashNextView, FlashReviewView
+from apps.flashcards.views import CardViewSet, DeckViewSet, FlashDueAllView, FlashImportView, FlashLeechesView, FlashNextView, FlashReviewView, ImportLogListView
 from apps.flashcards.mine_views import SentenceMineView
 from apps.grammar.views import GrammarImportView, GrammarQuestionViewSet
 from apps.grammar.ai_views import GrammarCheckView
@@ -68,6 +68,8 @@ urlpatterns = [
     path("api/flash/next/", FlashNextView.as_view(), name="flash-next"),
     path("api/flash/review/", FlashReviewView.as_view(), name="flash-review"),
     path("api/flash/import/", FlashImportView.as_view(), name="flash-import"),
+    path("api/flash/import-log/", ImportLogListView.as_view(), name="flash-import-log"),
+    path("api/flash/import-log/<int:log_id>/", ImportLogListView.as_view(), name="flash-import-log-delete"),
     path("api/listening/audio/import/", AudioZipImportView.as_view(), name="listening-audio-import"),
     path("api/listening/import/", ListeningImportView.as_view(), name="listening-import"),
     path("api/dashboard/", DashboardView.as_view(), name="dashboard"),

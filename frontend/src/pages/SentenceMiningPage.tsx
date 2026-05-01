@@ -66,7 +66,7 @@ export function SentenceMiningPage() {
     <div className="grid" style={{ maxWidth: 800, margin: "0 auto" }}>
       <div className="card" style={{ gridColumn: "span 12" }}>
         <div className="card__title">Sentence Miner</div>
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 16 }}>
+        <p className="ui-caption" style={{ fontSize: 13, marginBottom: 16 }}>
           Paste any Japanese text — manga, articles, songs. Claude identifies words you likely don't know
           yet at <strong>{level}</strong> level and optionally adds them as flashcards.
         </p>
@@ -79,10 +79,10 @@ export function SentenceMiningPage() {
           maxLength={3000}
           style={{
             width: "100%",
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.18)",
+            background: "var(--input-bg)",
+            border: "1px solid var(--border-mid)",
             borderRadius: 8,
-            color: "#fff",
+            color: "var(--text)",
             fontSize: 16,
             padding: "10px 14px",
             resize: "vertical",
@@ -98,10 +98,10 @@ export function SentenceMiningPage() {
               value={deckId}
               onChange={(e) => setDeckId(e.target.value ? Number(e.target.value) : "")}
               style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.18)",
+                background: "var(--input-bg)",
+                border: "1px solid var(--border-mid)",
                 borderRadius: 8,
-                color: "#fff",
+                color: "var(--text)",
                 padding: "6px 12px",
                 fontSize: 14,
                 maxWidth: 240,
@@ -123,13 +123,13 @@ export function SentenceMiningPage() {
             {loading ? "Extracting…" : "Extract Words"}
           </button>
 
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginLeft: "auto" }}>
+          <span className="ui-meta" style={{ fontSize: 12, marginLeft: "auto" }}>
             {text.length}/3000
           </span>
         </div>
 
         {error && (
-          <div style={{ color: "#f87171", marginTop: 12, fontSize: 13, padding: "8px 12px", background: "rgba(248,113,113,0.1)", borderRadius: 6 }}>
+          <div style={{ color: "var(--bad)", marginTop: 12, fontSize: 13, padding: "8px 12px", background: "rgba(255,92,122,0.1)", borderRadius: 6, border: "1px solid rgba(255,92,122,0.2)" }}>
             {error}
           </div>
         )}
@@ -142,7 +142,7 @@ export function SentenceMiningPage() {
               {result.words_found} Words Found
             </div>
             {result.cards_created > 0 && (
-              <span className="pill" style={{ color: "#4ade80", borderColor: "#4ade80" }}>
+              <span className="badge badge--success">
                 {result.cards_created} cards added
               </span>
             )}
@@ -151,22 +151,22 @@ export function SentenceMiningPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {result.words.map((w, i) => (
               <div key={i} style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
                 borderRadius: 8,
                 padding: "12px 14px",
               }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
                   <span style={{ fontSize: 20, fontWeight: 700 }}>{w.word}</span>
                   {w.reading && (
-                    <span style={{ fontSize: 14, color: "rgba(255,255,255,0.55)" }}>{w.reading}</span>
+                    <span className="ui-caption" style={{ fontSize: 14 }}>{w.reading}</span>
                   )}
-                  <span style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", marginLeft: "auto" }}>{w.meaning}</span>
+                  <span className="ui-caption" style={{ fontSize: 14, marginLeft: "auto" }}>{w.meaning}</span>
                 </div>
                 {w.example_jp && (
-                  <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", marginTop: 4 }}>
+                  <div className="ui-caption" style={{ fontSize: 13, marginTop: 4 }}>
                     {w.example_jp}
-                    {w.example_en && <span style={{ color: "rgba(255,255,255,0.35)" }}> — {w.example_en}</span>}
+                    {w.example_en && <span className="ui-meta"> — {w.example_en}</span>}
                   </div>
                 )}
               </div>
