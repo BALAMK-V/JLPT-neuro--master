@@ -20,7 +20,7 @@ docker compose up --build
 cd backend
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py seed_demo          # creates admin/demo accounts
+python manage.py seed_demo          # creates admin / bala / demo accounts
 python manage.py runserver
 
 # Frontend only
@@ -35,9 +35,15 @@ npm run dev
 | API     | http://127.0.0.1:8000/api/ |
 | Admin   | http://127.0.0.1:8000/admin/ |
 
-**Demo accounts** (both password `Test@123`):
-- `admin` — management user (`is_staff=True`), sees all features
-- `demo` — regular user (`is_staff=False`), sees learning features only
+**Demo accounts** (all password `Test@123`):
+
+| Username | `is_staff` | `is_superuser` | Role |
+|----------|-----------|----------------|------|
+| `admin`  | ✓ | ✓ | Superuser — full Django admin access |
+| `bala`   | ✓ | ✗ | Management user — imports, user mgmt |
+| `demo`   | ✗ | ✗ | Regular learner |
+
+> Re-running `seed_demo` is idempotent — safe to run on an existing DB.
 
 ---
 
@@ -52,7 +58,7 @@ The app has two roles, determined by Django's built-in `is_staff` flag:
 
 - The frontend exposes `me.is_staff` from `GET /api/auth/me/`.
 - Management routes are filtered out of the sidebar for regular users.
-- Backend import endpoints (kanji, vocab, grammar, reading, listening, flashcard CSV, all OCR endpoints) enforce `IsManagementUser` from `apps/users/permissions.py`.
+- Backend import endpoints enforce `IsManagementUser` from `apps/users/permissions.py`.
 
 ---
 
@@ -63,9 +69,10 @@ The app has two roles, determined by Django's built-in `is_staff` flag:
 ```
 apps/
   assessment/     Test management
-  content/        Kanji, Vocabulary, Reading passages
-  flashcards/     Deck + card SRS (SM-2 and FSRS-4.5)
+  content/        Kanji, Vocabulary
+  flashcards/     Deck + card SRS (SM-2 and FSRS-4.5) + ImportLog
   grammar/        Grammar questions + AI check
+  import_utils.py Shared multi-format file parser (CSV / JSON / XLSX)
   jlpt_exam/      Full JLPT exam simulation
   listening/      Audio comprehension + ZIP audio import
   neuro/          Learning-style assessment
@@ -77,14 +84,18 @@ apps/
   users/          Auth, profiles, appearance, user management
 ```
 
-### Key user app files
+### Key files
 
 | File | Purpose |
 |------|---------|
-| `users/permissions.py` | `IsManagementUser` permission class (used by all import views) |
+| `apps/import_utils.py` | `parse_import_file(file, filename)` — returns `list[dict]`; handles CSV, JSON, XLSX |
+| `apps/flashcards/models.py` | `ImportLog` model — audit record for every completed import |
+| `apps/flashcards/views.py` | `ImportLogListView` — GET list (100 entries), DELETE by id |
+| `users/permissions.py` | `IsManagementUser` permission class |
 | `users/serializers.py` | `MeSerializer` — exposes `is_staff` (read-only) |
 | `users/views.py` | `MeView`, `RegisterView`, `ChangePasswordView`, `ForgotPasswordView`, `ResetPasswordView`, `UserManagementListView`, `UserManagementDetailView` |
 | `users/auth_urls.py` | All auth + user management URL patterns under `/api/auth/` |
+| `users/management/commands/seed_demo.py` | Creates admin / bala / demo idempotently |
 
 ### User management API
 
@@ -94,6 +105,13 @@ apps/
 | POST | `/api/auth/users/` | Management | Create user (can set `is_staff`) |
 | PATCH | `/api/auth/users/<id>/` | Management | Update role / active / password |
 | DELETE | `/api/auth/users/<id>/` | Management | Delete user |
+
+### Import log API
+
+| Method | URL | Auth | Description |
+|--------|-----|------|-------------|
+| GET | `/api/flash/import-log/` | Management | Last 100 import records |
+| DELETE | `/api/flash/import-log/<id>/` | Management | Delete a log entry |
 
 ### Frontend structure
 
@@ -105,7 +123,10 @@ src/
     theme/        neuro.ts (CSS var injection per learning style)
     labels.ts     learning style labels and aliases
     learningStyle.ts  session/reminder/question count plans
-  components/     Shared: PageHeader, SideMenu, QuickNoteButton, FocusAudioWidget, CompanionWidget, imports/*
+  components/
+    imports/      CsvEditor, validators.ts, ValidationSummary, csv.ts
+    ui/           Badge, Divider, EmptyState, FormField, Modal, Notice, SectionHeader, Stack, Text
+    PageHeader, SideMenu, QuickNoteButton, FocusAudioWidget, CompanionWidget
   pages/          One file per route
   styles/         global.css (single stylesheet, BEM-like naming)
   types.ts        All TypeScript types
@@ -119,6 +140,21 @@ Hash-based (`/#flashcards`, `/#kanji`, etc.) with two path exceptions:
 
 Routes marked `managementOnly: true` in `route.ts` are filtered from the sidebar for non-staff users.
 
+### Sidebar navigation groups
+
+`SideMenu.tsx` renders collapsible groups (chevron toggle, active group starts expanded):
+
+| Group | Icon | Routes |
+|-------|------|--------|
+| Dashboard | ⌂ | dashboard |
+| Study | ✎ | kanji, vocab, grammar, listening, reading |
+| Practice | 🃏 | flashcards, tests, jlptExam |
+| AI Tools | ✦ | aiExamGen, grammarCheck, speakingMode, sentenceMining |
+| Social | ⚡ | multiplayerQuiz |
+| Notebook | ✏ | notes, sessions |
+| Settings | ◐ | profile, neuroAnalysis, appearance |
+| Management | ↓ | imports, paperUpload, userManagement *(staff only)* |
+
 ---
 
 ## CSS Conventions
@@ -127,7 +163,11 @@ Single stylesheet at `frontend/src/styles/global.css`. Class naming conventions:
 
 | Prefix | Used for |
 |--------|---------|
-| `.fc-*` | Flashcard review UI |
+| `.fc-*` | Flashcard review UI (Anki flip card, stats, ratings, session limit) |
+| `.fc-anki-*` | 3-D flip card faces (preserve-3d, backface-visibility) |
+| `.fc-deck-*` | Deck header and badge area |
+| `.fc-stats-*` | Per-deck stat row (total/due/new/learning/review/suspended) |
+| `.nav-group*` | Collapsible sidebar section header + items |
 | `.auth-*` | Auth page (login / register / reset) |
 | `.um-*` | User Management page |
 | `.deck-*` | Flashcard deck sidebar items |
@@ -140,20 +180,29 @@ Single stylesheet at `frontend/src/styles/global.css`. Class naming conventions:
 
 ## Import System
 
-All CSV imports are **management-only** (enforced at both frontend sidebar filter and backend `IsManagementUser` permission).
+All imports are **management-only** (frontend sidebar filter + backend `IsManagementUser`).  
+Accepted file formats: **CSV**, **JSON**, **XLSX** (via `apps/import_utils.py`).  
+Every successful import writes an `ImportLog` record visible in the History tab.
 
-| Content type | Endpoint | Key CSV headers |
+| Content type | Endpoint | Required fields |
 |-------------|----------|----------------|
-| Kanji | `POST /api/kanji/import/` | `character, onyomi, kunyomi, meaning_en, jlpt_level` |
+| Kanji | `POST /api/kanji/import/` | `character, meaning_en, jlpt_level` |
 | Vocabulary | `POST /api/vocab/import/` | `word, reading, meaning_en, jlpt_level` |
-| Grammar | `POST /api/grammar/import/` | `jlpt_level, section, prompt, option_a–d, answer` |
-| Reading | `POST /api/reading/import/` | `title, jlpt_level, text_jp, text_en` |
-| Listening | `POST /api/listening/import/` | `section, question_type, audio_text, question, option_a–d, answer` |
+| Grammar | `POST /api/grammar/import/` | `prompt, option_a–d, answer` |
+| Reading | `POST /api/reading/import/` | `passage_title, passage_type, jlpt_level, text_jp, question, option_a–d, answer` |
+| Listening | `POST /api/listening/import/` | `audio_file, question, option_a–d, answer` |
 | Listening audio | `POST /api/listening/audio/import/` | ZIP file of audio files |
-| Flashcards | `POST /api/flash/import/` | `front, back, tags, deck_id` |
+| Flashcards | `POST /api/flash/import/` | `front, back` |
 
-Frontend validation happens in `frontend/src/components/imports/validators.ts` before upload.  
-Max file size: **5 MB** CSV, **50 MB** ZIP (enforced in each import view).
+Sample CSV templates (N2-level data) live in `frontend/public/templates/`.  
+Frontend validation: `frontend/src/components/imports/validators.ts`.  
+Max file size: **5 MB** CSV/JSON/XLSX, **50 MB** ZIP.
+
+### Flashcard import — deck options
+
+When importing flashcards, Step 2 lets the user:
+- **Existing deck** — select from unlocked decks; shows level badge, type, card count, due count
+- **New deck** — enter name + pick JLPT level (N5–N1), deck type (custom/kanji/vocab/combined/mixed), SRS algo (SM-2 or FSRS-4.5)
 
 ---
 
@@ -161,18 +210,42 @@ Max file size: **5 MB** CSV, **50 MB** ZIP (enforced in each import view).
 
 - **Login**: `POST /api/auth/token/` → stores `access_token` + `refresh_token` in localStorage
 - **Register**: `POST /api/auth/register/`
-- **Forgot password**: `POST /api/auth/forgot-password/` — returns `dev_token` (uid:token) in dev mode; production should send email
+- **Forgot password**: `POST /api/auth/forgot-password/` — returns `dev_token` (uid:token) in dev mode
 - **Reset password**: `POST /api/auth/reset-password/` with `uid`, `token`, `new_password`
 - **Change password**: `POST /api/auth/change-password/` (authenticated)
 - **Token refresh**: automatic via `api()` client on 401
+
+Token lifetimes: **access 2 hours**, **refresh 30 days** (survives `docker restart`).  
+Only `docker compose down -v` (volume wipe) invalidates tokens.
 
 ---
 
 ## Flashcard SRS
 
-Two algorithms available per deck: **SM-2** (default) and **FSRS-4.5**.  
-Rating buttons: `Again (1) / Hard (2) / Good (3) / Easy (4)` — keyboard shortcuts active during review.  
-Leeches (8+ lapses) shown in a banner with unsuspend option.
+Two algorithms per deck: **SM-2** (default) and **FSRS-4.5**.  
+Review UI: full Anki-style 3-D flip card.
+
+- Front face: question text + "Press Space / tap to reveal" hint
+- Back face: front echo + divider + answer (pre-rotated `rotateY(180deg)`; parent card flips on reveal)
+- Rating buttons: `Again (1) / Hard (2) / Good (3) / Easy (4)` — keyboard shortcuts active
+- **Session limit** picker in deck sidebar (5 / 10 / 15 / 20 / 25 / 30 / 50 / 100 cards); default from learning-style plan
+- Leeches (8+ lapses) shown in banner with unsuspend option
+
+> CSS fix note: `.fc-anki-front` and `.fc-anki-back` must be **direct children** of `.fc-anki-card` (no wrapper div) for `transform-style: preserve-3d` + `backface-visibility: hidden` to work correctly.
+
+---
+
+## Migrations
+
+Each app has a single `0001_initial.py` migration (squashed clean slate as of v0.4.0).  
+To reset a local dev database:
+
+```bash
+cd backend
+rm db.sqlite3
+python manage.py migrate
+python manage.py seed_demo
+```
 
 ---
 
