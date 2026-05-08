@@ -190,12 +190,102 @@ html[data-animation-level="high"] .navlink {
 }
 
 .sidebar__hint {
-  margin-top: 12px;
+  margin-top: 8px;
   padding: 10px;
   border-radius: 12px;
   border: 1px dashed var(--border-mid);
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+/* Sidebar user card */
+.sidebar__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 12px;
+  color: var(--text);
+  transition: background 0.14s;
+}
+
+.sidebar__user:hover {
+  background: var(--panel);
+}
+
+.sidebar__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+.sidebar__user-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar__user-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar__user-meta {
+  display: flex;
+  gap: 4px;
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+
+/* Sidebar footer */
+.sidebar__footer {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.sidebar__theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: background 0.14s, color 0.14s;
+}
+
+.sidebar__theme-toggle:hover {
+  background: var(--panel);
+  color: var(--text);
+}
+
+/* Small pill variant */
+.pill--sm {
+  font-size: 10px;
+  padding: 2px 7px;
 }
 
 .overlay {
@@ -249,6 +339,84 @@ html[data-animation-level="high"] .navlink {
   background: var(--border);
   color: var(--muted);
   border: 1px solid var(--border-mid);
+}
+
+/* Topbar profile/theme buttons */
+.topbar__profile-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  border: none;
+}
+
+.topbar__profile-btn:hover {
+  opacity: 0.85;
+}
+
+.topbar__theme-btn {
+  font-size: 15px;
+}
+
+/* Profile page */
+.profile-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: 1px;
+}
+
+.profile-field-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-field-row:last-child {
+  border-bottom: none;
+}
+
+.profile-field-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.profile-field-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.profile-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.profile-style-btn {
+  min-width: 120px;
 }
 
 .content {
@@ -3305,6 +3473,163 @@ html[data-theme-mode="light"] .quiz-option:hover {
   color: var(--muted);
   font-weight: 600;
 }
+
+/* ── Furigana / ruby text ────────────────────────────────────────────────── */
+ruby { display: inline ruby; text-align: center; }
+rt {
+  font-size: 0.45em;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+.fc-anki-front__text ruby rt { font-size: 0.38em; color: rgba(255,255,255,0.55); }
+.fc-preview-front__text { font-size: 2rem; font-weight: 700; color: var(--text); }
+.fc-preview-front__text ruby rt { font-size: 0.38em; }
+
+/* ── Card image ──────────────────────────────────────────────────────────── */
+.fc-card-image {
+  max-width: 100%;
+  max-height: 140px;
+  border-radius: 10px;
+  object-fit: contain;
+  margin-top: 8px;
+}
+.fc-card-image--back {
+  max-height: 120px;
+  margin-top: 12px;
+}
+
+/* ── Audio player ────────────────────────────────────────────────────────── */
+.fc-audio {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+}
+.fc-audio__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.07);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.fc-audio__btn:hover { background: rgba(255,255,255,0.13); }
+.fc-audio__btn--playing {
+  background: rgba(124,92,255,0.18);
+  border-color: rgba(124,92,255,0.4);
+  color: var(--accent);
+}
+
+/* ── Rich back content (kanji/vocab structured display) ──────────────────── */
+.fc-rich-back {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: center;
+}
+.fc-rich-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+}
+.fc-rich-label {
+  font-size: 11px;
+  color: var(--muted);
+  background: rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 2px 7px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.fc-rich-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.fc-rich-meaning {
+  font-size: 1.2rem;
+  color: var(--text);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+/* ── Card table row actions ──────────────────────────────────────────────── */
+.fc-row-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.fc-row-btn {
+  font-size: 13px;
+  padding: 4px 8px;
+  min-width: 30px;
+}
+
+/* ── Edit card modal ─────────────────────────────────────────────────────── */
+.fc-edit-modal {
+  width: min(540px, 96vw);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.fc-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.fc-edit-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.fc-edit-preview-img {
+  max-width: 100%;
+  max-height: 100px;
+  border-radius: 8px;
+  object-fit: contain;
+  margin-top: 4px;
+}
+
+/* ── Card preview modal ──────────────────────────────────────────────────── */
+.fc-preview-modal {
+  width: min(500px, 96vw);
+}
+.fc-preview-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.fc-preview-face {
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.fc-preview-face-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  align-self: flex-start;
+}
+.fc-preview-front { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.fc-preview-back  { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.fc-preview-echo  { font-size: 1rem; color: var(--muted); font-weight: 600; }
+.fc-preview-tags  { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 
 /* Light-mode overrides for new components */
 html[data-theme-mode="light"] .fc-anki-front,

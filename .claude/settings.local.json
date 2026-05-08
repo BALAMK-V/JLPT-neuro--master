@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose *)",
+      "Bash(npx tsc *)",
+      "Bash(python manage.py migrate flashcards --run-syncdb)",
+      "Bash(python manage.py migrate)",
+      "Bash(python -c \"from apps.flashcards.serializers import CardSerializer; s = CardSerializer\\(\\); print\\([f for f in s.fields if s.fields[f].read_only]\\)\")",
+      "Bash(python -c \"import django; import os; os.environ['DJANGO_SETTINGS_MODULE']='jlpt_neuro_master.settings'; django.setup\\(\\); from apps.flashcards.serializers import CardSerializer; s = CardSerializer\\(\\); ro = [f for f in s.fields if s.fields[f].read_only]; rw = [f for f in ['furigana','image','audio'] if not s.fields[f].read_only]; print\\('read-only:', ro\\); print\\('writable new:', rw\\)\")",
+      "Bash(powershell -command \"\\(Get-Content 'C:\\\\Users\\\\HP\\\\Downloads\\\\N2.tres'\\).Count\")",
+      "Bash(python3 -)",
+      "Bash(python -c \"import os; os.environ['DJANGO_SETTINGS_MODULE']='jlpt_neuro_master.settings'; import django; django.setup\\(\\); from jlpt_neuro_master.pagination import FlexPageNumberPagination; p = FlexPageNumberPagination\\(\\); print\\('page_size:', p.page_size, '| query_param:', p.page_size_query_param, '| max:', p.max_page_size\\)\")"
+    ]
+  }
+}

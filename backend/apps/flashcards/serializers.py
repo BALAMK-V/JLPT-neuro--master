@@ -27,8 +27,13 @@ class DeckSerializer(serializers.ModelSerializer):
 
 
 class CardSerializer(serializers.ModelSerializer):
-    kanji_character = serializers.CharField(source="kanji.character", read_only=True)
-    vocab_word = serializers.CharField(source="vocab.word", read_only=True)
+    kanji_character = serializers.CharField(source="kanji.character", read_only=True, default="")
+    kanji_onyomi = serializers.CharField(source="kanji.onyomi", read_only=True, default="")
+    kanji_kunyomi = serializers.CharField(source="kanji.kunyomi", read_only=True, default="")
+    kanji_meaning = serializers.CharField(source="kanji.meaning_en", read_only=True, default="")
+    vocab_word = serializers.CharField(source="vocab.word", read_only=True, default="")
+    vocab_reading_detail = serializers.CharField(source="vocab.reading", read_only=True, default="")
+    vocab_meaning = serializers.CharField(source="vocab.meaning_en", read_only=True, default="")
 
     class Meta:
         model = Card
@@ -37,10 +42,18 @@ class CardSerializer(serializers.ModelSerializer):
             "deck",
             "kanji",
             "kanji_character",
+            "kanji_onyomi",
+            "kanji_kunyomi",
+            "kanji_meaning",
             "vocab",
             "vocab_word",
+            "vocab_reading_detail",
+            "vocab_meaning",
             "front",
             "back",
+            "furigana",
+            "image",
+            "audio",
             "tags",
             "suspended",
             "repetitions",

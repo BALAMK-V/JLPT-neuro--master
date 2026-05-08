@@ -1,19 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../app/api/client";
+import { api, API_BASE } from "../app/api/client";
 import { getLearningStylePlan } from "../app/learningStyle";
 import { useMe } from "../app/state/user";
 import { PageHeader } from "../components/PageHeader";
 import { KanjiCard } from "../components/KanjiCard";
 import type { Kanji, Paginated } from "../types";
 
+const PAGE_SIZE = 50;
+
+function nextPathFrom(nextUrl: string | null): string | null {
+  if (!nextUrl) return null;
+  return nextUrl.replace(API_BASE, "");
+}
+
 export function KanjiPage() {
   const { me } = useMe();
   const plan = getLearningStylePlan(me?.profile);
   const [items, setItems] = useState<Kanji[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [nextUrl, setNextUrl] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [level, setLevel] = useState<string>(me?.profile.jlpt_level ?? "N2");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [showFurigana, setShowFurigana] = useState(false);
 
   const search = useMemo(() => query.trim(), [query]);
@@ -21,16 +31,36 @@ export function KanjiPage() {
   useEffect(() => {
     setLoading(true);
     setError(null);
+    setItems([]);
+    setNextUrl(null);
 
     const qs = new URLSearchParams();
     if (level) qs.set("jlpt_level", level);
     if (search) qs.set("search", search);
+    qs.set("page_size", String(PAGE_SIZE));
 
     api<Paginated<Kanji>>(`/kanji/?${qs.toString()}`)
-      .then((data) => setItems(data.results))
+      .then((data) => {
+        setItems(data.results);
+        setTotalCount(data.count);
+        setNextUrl(nextPathFrom(data.next));
+      })
       .catch((e) => setError(String(e.message ?? e)))
       .finally(() => setLoading(false));
   }, [search, level]);
+
+  const loadMore = () => {
+    if (!nextUrl || loadingMore) return;
+    setLoadingMore(true);
+    api<Paginated<Kanji>>(nextUrl)
+      .then((data) => {
+        setItems((prev) => [...prev, ...data.results]);
+        setTotalCount(data.count);
+        setNextUrl(nextPathFrom(data.next));
+      })
+      .catch((e) => setError(String(e.message ?? e)))
+      .finally(() => setLoadingMore(false));
+  };
 
   return (
     <div>
@@ -61,7 +91,12 @@ export function KanjiPage() {
         ) : null}
       </div>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <div className="ui-meta" style={{ fontSize: 13 }}>
+          {!loading && totalCount > 0 && (
+            <>Showing {items.length} of <strong>{totalCount}</strong> kanji</>
+          )}
+        </div>
         <button
           className="btn"
           onClick={() => setShowFurigana((v) => !v)}
@@ -71,19 +106,32 @@ export function KanjiPage() {
         </button>
       </div>
 
-      {loading ? <div className="card">Loading...</div> : null}
-      {error ? <div className="card">Error: {error}</div> : null}
+      {loading ? <div className="card">Loading…</div> : null}
+      {error ? <div className="notice notice--bad">{error}</div> : null}
 
       <div className="grid">
         {items.map((k) => (
           <KanjiCard key={k.id} kanji={k} showFurigana={showFurigana} />
         ))}
         {!loading && !error && items.length === 0 ? (
-          <div className="card" style={{ gridColumn: "span 12" }}>
-            No results.
-          </div>
+          <div className="card" style={{ gridColumn: "span 12" }}>No results.</div>
         ) : null}
       </div>
+
+      {nextUrl && (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+          <button
+            className="btn btn--primary"
+            style={{ minWidth: 200 }}
+            disabled={loadingMore}
+            onClick={loadMore}
+          >
+            {loadingMore
+              ? "Loading…"
+              : `Load more (${items.length} / ${totalCount})`}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

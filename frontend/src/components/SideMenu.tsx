@@ -1,5 +1,7 @@
 import { useState } from "react";
 import type { RouteDef, RouteKey } from "../app/state/route";
+import { useMe } from "../app/state/user";
+import { useAppearance } from "../app/state/appearance";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -96,16 +98,15 @@ export function SideMenu({
   open: boolean;
   onClose: () => void;
 }) {
+  const { me } = useMe();
+  const { appearance, saveAppearance } = useAppearance();
   const routeMap = new Map(routes.map((r) => [r.key, r]));
 
-  // Which section is the active route in?
   const activeGroupLabel = GROUPS.find((g) => g.keys.includes(active))?.label ?? "";
 
-  // Sections start expanded if they contain the active route; otherwise collapsed
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
     for (const g of GROUPS) {
-      // Dashboard is always flat (1 item), no toggle needed
       init[g.label] = g.keys.length === 1 || g.keys.includes(active);
     }
     return init;
@@ -118,10 +119,29 @@ export function SideMenu({
   const navigate = (key: RouteKey) => {
     onNavigate(key);
     onClose();
-    // Expand the section containing this route
     const grp = GROUPS.find((g) => g.keys.includes(key));
     if (grp) setExpanded((prev) => ({ ...prev, [grp.label]: true }));
   };
+
+  const toggleTheme = () => {
+    const next = appearance.theme_mode === "dark" ? "light" : "dark";
+    saveAppearance({ ...appearance, theme_mode: next });
+  };
+
+  const isDark = appearance.theme_mode !== "light";
+
+  const initials = me
+    ? (me.first_name && me.last_name
+        ? `${me.first_name[0]}${me.last_name[0]}`.toUpperCase()
+        : me.username.slice(0, 2).toUpperCase())
+    : "??";
+
+  const displayName = me
+    ? ([me.first_name, me.last_name].filter(Boolean).join(" ") || me.username)
+    : "";
+
+  // suppress the activeGroupLabel warning
+  void activeGroupLabel;
 
   return (
     <>
@@ -135,17 +155,29 @@ export function SideMenu({
           </div>
         </div>
 
+        {/* User card */}
+        {me && (
+          <button className="sidebar__user" onClick={() => navigate("profile")}>
+            <div className="sidebar__avatar">{initials}</div>
+            <div className="sidebar__user-info">
+              <div className="sidebar__user-name">{displayName}</div>
+              <div className="sidebar__user-meta">
+                <span className="pill pill--sm">{me.profile.jlpt_level}</span>
+                {me.is_staff && <span className="pill pill--sm pill--management">Staff</span>}
+              </div>
+            </div>
+          </button>
+        )}
+
         {/* Nav groups */}
         <nav className="nav" aria-label="Navigation">
           {GROUPS.map((group) => {
-            // Filter to routes that exist in the allowed list
             const groupRoutes = group.keys
               .map((k) => routeMap.get(k))
               .filter((r): r is RouteDef => !!r);
 
             if (!groupRoutes.length) return null;
 
-            // Single-item groups render as a flat link (no toggle)
             if (groupRoutes.length === 1) {
               const r = groupRoutes[0];
               return (
@@ -194,8 +226,19 @@ export function SideMenu({
           })}
         </nav>
 
-        <div className="sidebar__hint">
-          Tip: use Quick Note anytime to capture thoughts.
+        {/* Footer: theme toggle + hint */}
+        <div className="sidebar__footer">
+          <button
+            className="sidebar__theme-toggle"
+            onClick={toggleTheme}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <span>{isDark ? "☀" : "◑"}</span>
+            <span>{isDark ? "Light mode" : "Dark mode"}</span>
+          </button>
+          <div className="sidebar__hint">
+            Tip: use Quick Note anytime to capture thoughts.
+          </div>
         </div>
       </aside>
 

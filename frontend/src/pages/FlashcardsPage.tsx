@@ -5,6 +5,272 @@ import { useMe } from "../app/state/user";
 import { PageHeader } from "../components/PageHeader";
 import type { FlashCard, FlashDeck, Paginated } from "../types";
 
+// ── Furigana renderer ─────────────────────────────────────────────────────────
+
+function parseFurigana(text: string): Array<{ t: string; r?: string }> {
+  const out: Array<{ t: string; r?: string }> = [];
+  const re = /([^\[]+)\[([^\]]+)\]/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push({ t: text.slice(last, m.index) });
+    out.push({ t: m[1], r: m[2] });
+    last = re.lastIndex;
+  }
+  if (last < text.length) out.push({ t: text.slice(last) });
+  return out;
+}
+
+function FuriganaText({
+  text,
+  furigana,
+  className,
+}: {
+  text: string;
+  furigana?: string;
+  className?: string;
+}) {
+  if (!text) return null;
+  if (text.includes("[") && text.includes("]")) {
+    const parts = parseFurigana(text);
+    return (
+      <span className={className}>
+        {parts.map((p, i) =>
+          p.r ? (
+            <ruby key={i}>{p.t}<rt>{p.r}</rt></ruby>
+          ) : (
+            <span key={i}>{p.t}</span>
+          )
+        )}
+      </span>
+    );
+  }
+  if (furigana) {
+    return <ruby className={className}>{text}<rt>{furigana}</rt></ruby>;
+  }
+  return <span className={className}>{text}</span>;
+}
+
+// ── Inline audio player ───────────────────────────────────────────────────────
+
+function CardAudio({ src }: { src: string }) {
+  const [playing, setPlaying] = useState(false);
+  const ref = useRef<HTMLAudioElement>(null);
+
+  const toggle = () => {
+    const el = ref.current;
+    if (!el) return;
+    if (playing) {
+      el.pause();
+      setPlaying(false);
+    } else {
+      el.play().catch(() => {});
+      setPlaying(true);
+    }
+  };
+
+  return (
+    <div className="fc-audio">
+      <audio ref={ref} src={src} onEnded={() => setPlaying(false)} preload="none" />
+      <button
+        className={`fc-audio__btn${playing ? " fc-audio__btn--playing" : ""}`}
+        onClick={(e) => { e.stopPropagation(); toggle(); }}
+      >
+        {playing ? "⏸" : "▶"} {playing ? "Pause" : "Play audio"}
+      </button>
+    </div>
+  );
+}
+
+// ── Rich back-face content ────────────────────────────────────────────────────
+
+function CardBackContent({ card }: { card: FlashCard }) {
+  if (card.kanji && (card.kanji_onyomi || card.kanji_kunyomi || card.kanji_meaning)) {
+    return (
+      <div className="fc-rich-back">
+        {card.kanji_onyomi && (
+          <div className="fc-rich-row">
+            <span className="fc-rich-label">音読み</span>
+            <span className="fc-rich-value">{card.kanji_onyomi}</span>
+          </div>
+        )}
+        {card.kanji_kunyomi && (
+          <div className="fc-rich-row">
+            <span className="fc-rich-label">訓読み</span>
+            <span className="fc-rich-value">{card.kanji_kunyomi}</span>
+          </div>
+        )}
+        <div className="fc-rich-meaning">{card.kanji_meaning || card.back}</div>
+      </div>
+    );
+  }
+  if (card.vocab && (card.vocab_reading_detail || card.vocab_meaning)) {
+    return (
+      <div className="fc-rich-back">
+        {card.vocab_reading_detail && (
+          <div className="fc-rich-row">
+            <span className="fc-rich-label">読み</span>
+            <span className="fc-rich-value">{card.vocab_reading_detail}</span>
+          </div>
+        )}
+        <div className="fc-rich-meaning">{card.vocab_meaning || card.back}</div>
+      </div>
+    );
+  }
+  return <div className="fc-anki-back__text">{card.back}</div>;
+}
+
+// ── Edit card modal ───────────────────────────────────────────────────────────
+
+function EditCardModal({
+  card,
+  onSave,
+  onClose,
+}: {
+  card: FlashCard;
+  onSave: (updated: FlashCard) => void;
+  onClose: () => void;
+}) {
+  const [front, setFront] = useState(card.front);
+  const [furigana, setFurigana] = useState(card.furigana ?? "");
+  const [back, setBack] = useState(card.back);
+  const [image, setImage] = useState(card.image ?? "");
+  const [audio, setAudio] = useState(card.audio ?? "");
+  const [tags, setTags] = useState((card.tags ?? []).join(", "));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const save = async () => {
+    setBusy(true);
+    setErr(null);
+    try {
+      const updated = await api<FlashCard>(`/flash/cards/${card.id}/`, "PATCH", {
+        front: front.trim(),
+        furigana: furigana.trim(),
+        back: back.trim(),
+        image: image.trim(),
+        audio: audio.trim(),
+        tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+      });
+      onSave(updated);
+    } catch (e: any) {
+      setErr(String(e?.message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal-box fc-edit-modal">
+        <div className="modal-header">
+          <span className="modal-title">Edit Card</span>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        {err && <div className="notice notice--bad" style={{ marginBottom: 12 }}>{err}</div>}
+        <div className="fc-edit-fields">
+          <label className="fc-edit-label">Front</label>
+          <textarea className="field" rows={3} value={front} onChange={(e) => setFront(e.target.value)} />
+
+          <label className="fc-edit-label">
+            Furigana <span className="ui-meta" style={{ fontSize: 11 }}>(reading shown above front text — supports inline 漢字[かんじ] notation too)</span>
+          </label>
+          <input className="field" value={furigana} onChange={(e) => setFurigana(e.target.value)} placeholder="e.g. かんじ" />
+
+          <label className="fc-edit-label">Back</label>
+          <textarea className="field" rows={4} value={back} onChange={(e) => setBack(e.target.value)} />
+
+          <label className="fc-edit-label">Image URL</label>
+          <input className="field" value={image} onChange={(e) => setImage(e.target.value)} placeholder="https://example.com/image.png" />
+          {image && <img className="fc-edit-preview-img" src={image} alt="preview" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />}
+
+          <label className="fc-edit-label">Audio URL</label>
+          <input className="field" value={audio} onChange={(e) => setAudio(e.target.value)} placeholder="https://example.com/audio.mp3" />
+
+          <label className="fc-edit-label">
+            Tags <span className="ui-meta" style={{ fontSize: 11 }}>(comma-separated)</span>
+          </label>
+          <input className="field" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="N2, kanji, ..." />
+        </div>
+        <div className="modal-actions">
+          <button className="btn" onClick={onClose}>Cancel</button>
+          <button
+            className="btn btn--primary"
+            disabled={busy || !front.trim() || !back.trim()}
+            onClick={save}
+          >
+            {busy ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Card preview modal ────────────────────────────────────────────────────────
+
+function CardPreviewModal({
+  card,
+  onClose,
+}: {
+  card: FlashCard;
+  onClose: () => void;
+}) {
+  const [showBack, setShowBack] = useState(false);
+
+  return (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal-box fc-preview-modal">
+        <div className="modal-header">
+          <span className="modal-title">Card Preview</span>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="fc-preview-body">
+          <div className="fc-preview-face">
+            <div className="fc-preview-face-label">Front</div>
+            <div className="fc-preview-front">
+              <FuriganaText
+                text={card.front}
+                furigana={card.furigana}
+                className="fc-preview-front__text"
+              />
+              {card.image && (
+                <img className="fc-card-image" src={card.image} alt="" />
+              )}
+            </div>
+          </div>
+
+          {!showBack ? (
+            <button
+              className="btn btn--primary"
+              style={{ width: "100%", marginTop: 8 }}
+              onClick={() => setShowBack(true)}
+            >
+              Show Answer
+            </button>
+          ) : (
+            <div className="fc-preview-face">
+              <div className="fc-preview-face-label">Back</div>
+              <div className="fc-preview-back">
+                <div className="fc-preview-echo">{card.front}</div>
+                <div className="fc-anki-divider" style={{ margin: "12px 0", width: "100%" }} />
+                <CardBackContent card={card} />
+                {card.audio && <CardAudio src={card.audio} />}
+              </div>
+            </div>
+          )}
+
+          {card.tags?.length > 0 && (
+            <div className="fc-preview-tags">
+              {card.tags.map((t) => <span key={t} className="pill">{t}</span>)}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Deck detail component ─────────────────────────────────────────────────────
 
 function DeckDetail({
@@ -17,6 +283,7 @@ function DeckDetail({
   setBack,
   onAdd,
   onDelete,
+  onEdit,
   onStartReview,
   isManagement,
 }: {
@@ -29,6 +296,7 @@ function DeckDetail({
   setBack: (v: string) => void;
   onAdd: () => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  onEdit: (updated: FlashCard) => void;
   onStartReview: () => void;
   isManagement: boolean;
 }) {
@@ -38,8 +306,25 @@ function DeckDetail({
   const learnCards = cards.filter((c) => c.repetitions > 0 && c.interval_days < 7 && !c.suspended);
   const reviewCards = cards.filter((c) => c.interval_days >= 7 && !c.suspended);
 
+  const [editCard, setEditCard] = useState<FlashCard | null>(null);
+  const [previewCard, setPreviewCard] = useState<FlashCard | null>(null);
+
   return (
     <div>
+      {editCard && (
+        <EditCardModal
+          card={editCard}
+          onSave={(updated) => { onEdit(updated); setEditCard(null); }}
+          onClose={() => setEditCard(null)}
+        />
+      )}
+      {previewCard && (
+        <CardPreviewModal
+          card={previewCard}
+          onClose={() => setPreviewCard(null)}
+        />
+      )}
+
       {/* Deck header */}
       <div className="fc-deck-header">
         <div className="fc-deck-header__info">
@@ -107,7 +392,7 @@ function DeckDetail({
           <div className="fc-add-row">
             <textarea
               className="field fc-add-field"
-              placeholder="Front — question / character"
+              placeholder="Front — question / character (use 漢字[かんじ] for inline furigana)"
               value={front}
               rows={3}
               onChange={(e) => setFront(e.target.value)}
@@ -147,10 +432,9 @@ function DeckDetail({
                   <th>Front</th>
                   <th>Back</th>
                   <th style={{ width: 80 }}>Due</th>
-                  <th style={{ width: 70 }}>Intv.</th>
-                  <th style={{ width: 60 }}>EF</th>
-                  <th style={{ width: 60 }}>Reps</th>
-                  {isManagement && !deck.is_locked ? <th style={{ width: 80 }} /> : null}
+                  <th style={{ width: 60 }}>Intv.</th>
+                  <th style={{ width: 55 }}>Reps</th>
+                  <th style={{ width: 120 }} />
                 </tr>
               </thead>
               <tbody>
@@ -158,21 +442,56 @@ function DeckDetail({
                   const overdue = !c.suspended && new Date(c.due_at).getTime() <= Date.now();
                   return (
                     <tr key={c.id} style={c.suspended ? { opacity: 0.45 } : undefined}>
-                      <td style={{ fontWeight: 600 }}>{c.front}</td>
-                      <td className="ui-caption" style={{ whiteSpace: "pre-wrap", maxWidth: 220 }}>{c.back}</td>
+                      <td style={{ fontWeight: 600 }}>
+                        <FuriganaText text={c.front} furigana={c.furigana} />
+                        {c.image && (
+                          <span className="pill" style={{ fontSize: 10, marginLeft: 6 }}>📷</span>
+                        )}
+                        {c.audio && (
+                          <span className="pill" style={{ fontSize: 10, marginLeft: 4 }}>🔊</span>
+                        )}
+                      </td>
+                      <td className="ui-caption" style={{ whiteSpace: "pre-wrap", maxWidth: 200, fontSize: 13 }}>
+                        {c.back.split("\n")[0]}
+                        {c.back.includes("\n") ? <span className="ui-meta"> …</span> : null}
+                      </td>
                       <td className="ui-meta" style={{ fontSize: 12, color: overdue ? "var(--bad)" : undefined }}>
                         {c.suspended ? "suspended" : new Date(c.due_at).toLocaleDateString()}
                       </td>
                       <td className="ui-meta" style={{ fontSize: 12 }}>{c.interval_days}d</td>
-                      <td className="ui-meta" style={{ fontSize: 12 }}>{c.ease_factor.toFixed(1)}</td>
                       <td className="ui-meta" style={{ fontSize: 12 }}>{c.repetitions}</td>
-                      {isManagement && !deck.is_locked ? (
-                        <td>
-                          <button className="btn" style={{ fontSize: 11, padding: "4px 8px" }} disabled={busy} onClick={() => onDelete(c.id)}>
-                            Remove
+                      <td>
+                        <div className="fc-row-actions">
+                          <button
+                            className="btn fc-row-btn"
+                            title="Preview"
+                            onClick={() => setPreviewCard(c)}
+                          >
+                            👁
                           </button>
-                        </td>
-                      ) : null}
+                          {isManagement && !deck.is_locked && (
+                            <>
+                              <button
+                                className="btn fc-row-btn"
+                                title="Edit"
+                                disabled={busy}
+                                onClick={() => setEditCard(c)}
+                              >
+                                ✎
+                              </button>
+                              <button
+                                className="btn fc-row-btn"
+                                title="Remove"
+                                style={{ color: "var(--bad)" }}
+                                disabled={busy}
+                                onClick={() => onDelete(c.id)}
+                              >
+                                ✕
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -185,7 +504,7 @@ function DeckDetail({
   );
 }
 
-// ── Review (Anki-style flip card) ─────────────────────────────────────────────
+// ── Review (Anki-style) ───────────────────────────────────────────────────────
 
 function ReviewView({
   deckId,
@@ -199,28 +518,34 @@ function ReviewView({
   onDone: () => void;
 }) {
   const [queue, setQueue] = useState<FlashCard[]>([]);
-  const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionDone, setSessionDone] = useState(0);
 
-  const current = queue[idx] ?? null;
-  const showBackRef = useRef(false);
+  // Track per-session "again" counts to avoid infinite loops
+  const againCounts = useRef<Record<number, number>>({});
+
+  const current = queue[0] ?? null;
+
+  const flippedRef = useRef(false);
   const busyRef = useRef(false);
-  showBackRef.current = flipped;
+  flippedRef.current = flipped;
   busyRef.current = busy;
 
   const load = async () => {
     setBusy(true);
+    setLoaded(false);
     setError(null);
     try {
       const res = await api<{ count: number; results: FlashCard[] }>(
         `/flash/next/?deck_id=${deckId}&limit=${limit}`
       );
       setQueue(res.results);
-      setIdx(0);
       setFlipped(false);
+      againCounts.current = {};
+      setLoaded(true);
     } catch (e: any) {
       setError(String(e?.message ?? e));
     } finally {
@@ -228,7 +553,9 @@ function ReviewView({
     }
   };
 
-  useEffect(() => { load(); }, [deckId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    load();
+  }, [deckId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rate = async (rating: "again" | "hard" | "good" | "easy") => {
     if (!current || busyRef.current) return;
@@ -236,13 +563,46 @@ function ReviewView({
     setError(null);
     try {
       await api<FlashCard>("/flash/review/", "POST", { card_id: current.id, rating });
-      setSessionDone((s) => s + 1);
-      const nextIdx = idx + 1;
-      if (nextIdx >= queue.length) {
-        await load();
+
+      let newQueue: FlashCard[];
+      const [head, ...rest] = queue;
+
+      if (rating === "again") {
+        // Re-insert card further in queue so it comes back this session.
+        // Cap at 3 retries per card to prevent infinite loops.
+        const fails = (againCounts.current[head.id] ?? 0) + 1;
+        againCounts.current[head.id] = fails;
+        if (fails < 3) {
+          newQueue = [...rest];
+          const pos = Math.min(3, newQueue.length);
+          newQueue.splice(pos, 0, head);
+        } else {
+          // Give up on this card for the session, move on
+          newQueue = rest;
+        }
       } else {
-        setIdx(nextIdx);
-        setFlipped(false);
+        newQueue = rest;
+        setSessionDone((s) => s + 1);
+      }
+
+      setFlipped(false);
+
+      if (newQueue.length === 0) {
+        // Fetch more due cards — if empty, done screen shows
+        setBusy(true);
+        try {
+          const res = await api<{ count: number; results: FlashCard[] }>(
+            `/flash/next/?deck_id=${deckId}&limit=${limit}`
+          );
+          setQueue(res.results);
+          againCounts.current = {};
+        } catch (e: any) {
+          setError(String(e?.message ?? e));
+        } finally {
+          setBusy(false);
+        }
+      } else {
+        setQueue(newQueue);
       }
     } catch (e: any) {
       setError(String(e?.message ?? e));
@@ -257,8 +617,12 @@ function ReviewView({
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if ((e.key === " " || e.key === "Enter") && !showBackRef.current) { e.preventDefault(); setFlipped(true); return; }
-      if (showBackRef.current && !busyRef.current) {
+      if ((e.key === " " || e.key === "Enter") && !flippedRef.current) {
+        e.preventDefault();
+        setFlipped(true);
+        return;
+      }
+      if (flippedRef.current && !busyRef.current) {
         if (e.key === "1") void rateRef.current("again");
         if (e.key === "2") void rateRef.current("hard");
         if (e.key === "3") { e.preventDefault(); void rateRef.current("good"); }
@@ -269,11 +633,12 @@ function ReviewView({
     return () => window.removeEventListener("keydown", handler);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const remaining = queue.length - idx;
+  const remaining = queue.length;
   const total = sessionDone + remaining;
   const progressPct = total > 0 ? Math.round((sessionDone / total) * 100) : 0;
 
-  if (!busy && !current) {
+  // Done: loaded (not initial), not busy, queue empty
+  if (loaded && !busy && queue.length === 0) {
     return (
       <div className="fc-review fc-review--done">
         <div className="fc-done-icon">✓</div>
@@ -311,7 +676,12 @@ function ReviewView({
           onClick={() => !flipped && setFlipped(true)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!flipped) setFlipped(true); } }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              if (!flipped) setFlipped(true);
+            }
+          }}
         >
           {/* Front face */}
           <div className="fc-anki-front">
@@ -320,7 +690,14 @@ function ReviewView({
                 <span className="ui-meta">Loading…</span>
               ) : current ? (
                 <>
-                  <div className="fc-anki-front__text">{current.front}</div>
+                  <FuriganaText
+                    text={current.front}
+                    furigana={current.furigana}
+                    className="fc-anki-front__text"
+                  />
+                  {current.image && (
+                    <img className="fc-card-image" src={current.image} alt="" />
+                  )}
                   <div className="fc-anki-hint">Press Space / tap to reveal</div>
                 </>
               ) : null}
@@ -339,9 +716,17 @@ function ReviewView({
           {/* Back face */}
           <div className="fc-anki-back">
             <div className="fc-anki-back__content">
-              <div className="fc-anki-back__front-echo">{current?.front}</div>
+              <FuriganaText
+                text={current?.front ?? ""}
+                furigana={current?.furigana}
+                className="fc-anki-back__front-echo"
+              />
               <div className="fc-anki-divider" />
-              <div className="fc-anki-back__text">{current?.back}</div>
+              {current && <CardBackContent card={current} />}
+              {current?.audio && <CardAudio src={current.audio} />}
+              {current?.image && (
+                <img className="fc-card-image fc-card-image--back" src={current.image} alt="" />
+              )}
             </div>
           </div>
         </div>
@@ -352,7 +737,7 @@ function ReviewView({
         <div className="fc-ratings">
           <button className="fc-rating fc-rating--again" disabled={busy} onClick={() => void rate("again")}>
             <span className="fc-rating__label">Again</span>
-            <span className="fc-rating__sub">&lt;10min</span>
+            <span className="fc-rating__sub">&lt;10min · retry</span>
             <kbd>1</kbd>
           </button>
           <button className="fc-rating fc-rating--hard" disabled={busy} onClick={() => void rate("hard")}>
@@ -455,6 +840,10 @@ export function FlashcardsPage() {
     finally { setBusy(false); }
   };
 
+  const editCard = (updated: FlashCard) => {
+    setCards((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  };
+
   const unsuspendLeech = async (cardId: number) => {
     setBusy(true);
     try {
@@ -505,7 +894,9 @@ export function FlashcardsPage() {
             {leeches.map((c) => (
               <div key={c.id} className="fc-leech-row">
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14 }}>{c.front}</div>
+                  <div style={{ fontSize: 14 }}>
+                    <FuriganaText text={c.front} furigana={c.furigana} />
+                  </div>
                   <div className="ui-meta" style={{ fontSize: 12, marginTop: 2 }}>
                     {c.lapses} lapses · {decks.find((d) => d.id === c.deck)?.name ?? `Deck ${c.deck}`}
                   </div>
@@ -610,6 +1001,7 @@ export function FlashcardsPage() {
               setBack={setBack}
               onAdd={addCard}
               onDelete={deleteCard}
+              onEdit={editCard}
               onStartReview={() => setMode("review")}
               isManagement={me?.is_staff ?? false}
             />

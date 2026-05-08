@@ -99,6 +99,7 @@ def _sync_locked_deck(deck: Deck) -> int:
                 kanji=k,
                 front=k.character,
                 back=f"{k.meaning_en}\nonyomi: {k.onyomi}\nkunyomi: {k.kunyomi}".strip(),
+                furigana=k.onyomi,
                 tags=[level, "kanji"],
             )
             for k in missing
@@ -118,6 +119,7 @@ def _sync_locked_deck(deck: Deck) -> int:
                 vocab=v,
                 front=v.word,
                 back=f"{v.meaning_en}\nreading: {v.reading}".strip(),
+                furigana=v.reading,
                 tags=[level, "vocab"],
             )
             for v in missing
@@ -539,18 +541,30 @@ class FlashImportView(APIView):
 
                 front = raw.get("front", "")
                 back = raw.get("back", "")
+                furigana = raw.get("furigana", "")
+                image = raw.get("image", "") or raw.get("image_url", "")
+                audio = raw.get("audio", "") or raw.get("audio_url", "")
+
                 if not front and kanji:
                     front = kanji.character
                     back = f"{kanji.meaning_en}\nonyomi: {kanji.onyomi}\nkunyomi: {kanji.kunyomi}".strip()
+                    if not furigana:
+                        furigana = kanji.onyomi
                 if not front and vocab:
                     front = vocab.word
                     back = f"{vocab.meaning_en}\nreading: {vocab.reading}".strip()
+                    if not furigana:
+                        furigana = vocab.reading
 
                 if not front or not back:
                     skipped += 1
                     continue
 
-                Card.objects.create(deck=deck, kanji=kanji, vocab=vocab, front=front, back=back, tags=tags)
+                Card.objects.create(
+                    deck=deck, kanji=kanji, vocab=vocab,
+                    front=front, back=back, furigana=furigana,
+                    image=image, audio=audio, tags=tags,
+                )
                 created += 1
 
         ImportLog.objects.create(

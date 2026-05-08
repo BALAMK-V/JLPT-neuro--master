@@ -26,11 +26,26 @@ import { SideMenu } from "../components/SideMenu";
 import { QuickNoteButton } from "../components/QuickNoteButton";
 import { FocusAudioWidget } from "../components/FocusAudioWidget";
 import { CompanionWidget } from "../components/companion/CompanionWidget";
-import { AppearanceProvider } from "./state/appearance";
+import { AppearanceProvider, useAppearance } from "./state/appearance";
 import { ROUTES, setRoute, useRoute } from "./state/route";
 import { useMe, UserProvider } from "./state/user";
 import { applyNeuroUiMode } from "./theme/neuro";
 import { getLearningLabel } from "./labels";
+
+function ThemeToggle() {
+  const { appearance, saveAppearance } = useAppearance();
+  const isDark = appearance.theme_mode !== "light";
+  return (
+    <button
+      className="btn topbar__theme-btn"
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      onClick={() => saveAppearance({ ...appearance, theme_mode: isDark ? "light" : "dark" })}
+      style={{ padding: "6px 10px", fontSize: 15, lineHeight: 1 }}
+    >
+      {isDark ? "☀" : "◑"}
+    </button>
+  );
+}
 
 function AppShell() {
   const { me, logout } = useMe();
@@ -126,6 +141,15 @@ function AppShell() {
             <span className="pill">{me.profile.jlpt_level}</span>
             <span className="pill">{getLearningLabel(me.profile.learning_type, me.profile.ui_prefs)}</span>
             {me.is_staff && <span className="pill pill--management">Management</span>}
+            <ThemeToggle />
+            <button
+              className="btn topbar__profile-btn"
+              onClick={() => setRoute("profile")}
+              title="Profile"
+              style={{ padding: "6px 10px" }}
+            >
+              {me.first_name ? me.first_name[0].toUpperCase() : me.username[0].toUpperCase()}
+            </button>
             <button className="btn" onClick={logout} style={{ padding: "6px 10px" }}>
               Logout
             </button>

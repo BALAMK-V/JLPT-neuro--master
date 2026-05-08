@@ -270,10 +270,18 @@ export type FlashCard = {
   deck: number;
   kanji: number | null;
   kanji_character: string;
+  kanji_onyomi: string;
+  kanji_kunyomi: string;
+  kanji_meaning: string;
   vocab: number | null;
   vocab_word: string;
+  vocab_reading_detail: string;
+  vocab_meaning: string;
   front: string;
   back: string;
+  furigana: string;
+  image: string;
+  audio: string;
   tags: string[];
   suspended: boolean;
   repetitions: number;

@@ -67,6 +67,10 @@ class Card(models.Model):
     lapses = models.PositiveIntegerField(default=0)
     last_rating = models.CharField(max_length=10, blank=True)
 
+    furigana = models.TextField(blank=True, default="")
+    image = models.URLField(max_length=500, blank=True, default="")
+    audio = models.URLField(max_length=500, blank=True, default="")
+
     fsrs_stability = models.FloatField(null=True, blank=True)
     fsrs_difficulty = models.FloatField(null=True, blank=True)
     fsrs_state = models.CharField(max_length=15, blank=True, default="")

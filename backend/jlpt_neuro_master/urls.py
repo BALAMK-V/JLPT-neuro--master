@@ -54,7 +54,11 @@ router.register(r"exam-results", ExamResultViewSet, basename="exam-result")
 urlpatterns = [
     path("", RedirectView.as_view(url="/api/", permanent=False), name="root"),
     path("admin/", admin.site.urls),
-    path("api/", include(router.urls)),
+
+    # ── Specific action/import paths BEFORE the router so they are not
+    #    swallowed by the router's <pk> catch-all patterns.
+    #    e.g. POST /api/kanji/import/ would match router's kanji/<pk>/ and
+    #    return 405 if this were placed after include(router.urls).
     path("api/kanji/import/", KanjiImportView.as_view(), name="kanji-import"),
     path("api/vocab/import/", VocabularyImportView.as_view(), name="vocab-import"),
     path("api/vocab/<int:pk>/explain/", VocabExplainView.as_view(), name="vocab-explain"),
@@ -81,8 +85,8 @@ urlpatterns = [
     path("api/appearance/reset/", AppearanceResetView.as_view(), name="appearance-reset"),
     path("api/companion/", CompanionView.as_view(), name="companion"),
     path("api/companion/update/", CompanionUpdateView.as_view(), name="companion-update"),
-    path("api/auth/", include("apps.users.auth_urls")),
     path("api/auth/me/", MeView.as_view(), name="me"),
+    path("api/auth/", include("apps.users.auth_urls")),
     # JLPT Exam system
     path("api/exams/ai-generate/", AIExamGenerateView.as_view(), name="exam-ai-generate"),
     path("api/exams/<int:pk>/start/", JLPTExamViewSet.as_view({"post": "start"}), name="exam-start"),
@@ -96,6 +100,9 @@ urlpatterns = [
     path("api/ocr/papers/<int:pk>/ai-parse/", AIParsePaperView.as_view(), name="ocr-ai-parse"),
     path("api/ocr/papers/<int:pk>/questions/", UpdateParsedQuestionsView.as_view(), name="ocr-update-questions"),
     path("api/ocr/import/", ImportParsedQuestionsView.as_view(), name="ocr-import"),
+
+    # Router last — its <pk> catch-alls must not shadow the specific paths above
+    path("api/", include(router.urls)),
 ]
 
 if settings.DEBUG:
