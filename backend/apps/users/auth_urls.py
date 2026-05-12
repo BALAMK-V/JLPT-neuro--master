@@ -4,6 +4,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     ChangePasswordView,
     ForgotPasswordView,
+    PlayerLevelView,
     RegisterView,
     ResetPasswordView,
     UserManagementDetailView,
@@ -17,6 +18,7 @@ urlpatterns = [
     path("change-password/", ChangePasswordView.as_view(), name="change_password"),
     path("forgot-password/", ForgotPasswordView.as_view(), name="forgot_password"),
     path("reset-password/", ResetPasswordView.as_view(), name="reset_password"),
+    path("profile/level/", PlayerLevelView.as_view(), name="player_level"),
     path("users/", UserManagementListView.as_view(), name="user_management_list"),
     path("users/<int:pk>/", UserManagementDetailView.as_view(), name="user_management_detail"),
 ]

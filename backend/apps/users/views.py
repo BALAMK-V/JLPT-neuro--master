@@ -272,3 +272,11 @@ class UserManagementDetailView(APIView):
 
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PlayerLevelView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):  # type: ignore[no-untyped-def]
+        from apps.users.level import compute_player_level
+        return Response(compute_player_level(request.user))

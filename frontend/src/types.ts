@@ -50,6 +50,23 @@ export type NeuroProfileResult = {
   days_since_assessment?: number;
 };
 
+export type AvatarConfig = {
+  skin_tone: string;
+  hair_style: "short" | "long" | "spiky" | "bald" | "ponytail";
+  hair_color: string;
+  eye_shape: "round" | "almond" | "narrow";
+  eye_color: string;
+  accessory: "none" | "glasses" | "hat" | "headband";
+};
+
+export type LevelInfo = {
+  level: number;
+  title: string;
+  xp: number;
+  xp_in_level: number;
+  next_xp: number;
+};
+
 export type UserProfile = {
   learning_type: LearningType;
   jlpt_level: "N5" | "N4" | "N3" | "N2" | "N1";
@@ -58,6 +75,10 @@ export type UserProfile = {
   reminders_enabled: boolean;
   reminder_interval_minutes: number;
   ui_prefs: Record<string, unknown>;
+  display_name: string;
+  nickname: string;
+  avatar_config: AvatarConfig;
+  avatar_url: string;
 };
 
 export type Me = {
@@ -68,6 +89,7 @@ export type Me = {
   last_name: string;
   is_staff: boolean;
   profile: UserProfile;
+  level_info: LevelInfo;
 };
 
 export type ThemeMode = "light" | "dark" | "auto";
@@ -305,4 +327,69 @@ export type ExamHistoryEntry = {
   section_scores: Record<string, { total: number; correct: number; percentage: number }>;
   passed: boolean;
   created_at: string;
+};
+
+export type PlayerProfile = {
+  user_id: number | null;
+  name: string;
+  avatar: AvatarConfig;
+  level: number;
+  level_title: string;
+  score: number;
+  answered: boolean;
+  streak: number;
+  response_time_ms: number | null;
+};
+
+export type ReplayRoundAnswer = {
+  user_id: number | null;
+  name: string;
+  option_id: number;
+  correct: boolean;
+  response_time_ms: number;
+};
+
+export type ReplayRound = {
+  round_index: number;
+  question_id: number;
+  answers: ReplayRoundAnswer[];
+  scores: Array<{ user_id: number | null; name: string; score: number }>;
+};
+
+export type QuizReplay = {
+  id: number;
+  code: string;
+  level: string;
+  players: Array<{
+    user_id: number | null;
+    name: string;
+    avatar_config: AvatarConfig;
+    level: number;
+    score: number;
+  }>;
+  questions: Array<{
+    id: number;
+    text: string;
+    passage: string;
+    options: Array<{ id: number; label: string; text: string }>;
+    explanation: string;
+  }>;
+  rounds: ReplayRound[];
+  winner_id: number | null;
+  started_at: string;
+  ended_at: string | null;
+};
+
+export type QuizHistoryEntry = {
+  game_id: number;
+  code: string;
+  level: string;
+  started_at: string;
+  ended_at: string | null;
+  score: number;
+  correct_count: number;
+  total_count: number;
+  avg_response_time_ms: number;
+  rank: number;
+  player_count: number;
 };

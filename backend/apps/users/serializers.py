@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from apps.users.level import compute_player_level
 from .models import StudyCompanion, UserAppearanceSettings, UserProfile
 
 
@@ -18,16 +19,24 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "reminders_enabled",
             "reminder_interval_minutes",
             "ui_prefs",
+            "display_name",
+            "nickname",
+            "avatar_config",
+            "avatar_url",
         ]
 
 
 class MeSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer()
+    level_info = serializers.SerializerMethodField()
+
+    def get_level_info(self, obj):  # type: ignore[no-untyped-def]
+        return compute_player_level(obj)
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "first_name", "last_name", "is_staff", "profile"]
-        read_only_fields = ["is_staff"]
+        fields = ["id", "username", "email", "first_name", "last_name", "is_staff", "profile", "level_info"]
+        read_only_fields = ["is_staff", "level_info"]
 
     def update(self, instance, validated_data):  # type: ignore[no-untyped-def]
         profile_data = validated_data.pop("profile", None)

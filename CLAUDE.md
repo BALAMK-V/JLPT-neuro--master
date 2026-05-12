@@ -146,7 +146,7 @@ Routes marked `managementOnly: true` in `route.ts` are filtered from the sidebar
 
 | Group | Icon | Routes |
 |-------|------|--------|
-| Dashboard | ⌂ | dashboard |
+| Dashboard | 📊 | dashboard |
 | Study | ✎ | kanji, vocab, grammar, listening, reading |
 | Practice | 🃏 | flashcards, tests, jlptExam |
 | AI Tools | ✦ | aiExamGen, grammarCheck, speakingMode, sentenceMining |

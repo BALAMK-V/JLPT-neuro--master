@@ -6,7 +6,7 @@ import { useAppearance } from "../app/state/appearance";
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 const ICONS: Partial<Record<RouteKey, string>> = {
-  dashboard:      "⌂",
+  dashboard:      "📊",
   flashcards:     "🃏",
   kanji:          "漢",
   vocab:          "語",
@@ -42,7 +42,7 @@ type MenuGroup = {
 const GROUPS: MenuGroup[] = [
   {
     label: "Dashboard",
-    icon: "⌂",
+    icon: "📊",
     keys: ["dashboard"],
   },
   {

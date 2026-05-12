@@ -27,6 +27,11 @@ class UserProfile(models.Model):
 
     ui_prefs = models.JSONField(default=dict, blank=True)
 
+    display_name = models.CharField(max_length=60, blank=True, default="")
+    nickname = models.CharField(max_length=30, blank=True, default="")
+    avatar_config = models.JSONField(default=dict, blank=True)
+    avatar_url = models.URLField(blank=True, default="")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

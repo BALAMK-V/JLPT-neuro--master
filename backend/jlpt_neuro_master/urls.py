@@ -101,6 +101,8 @@ urlpatterns = [
     path("api/ocr/papers/<int:pk>/questions/", UpdateParsedQuestionsView.as_view(), name="ocr-update-questions"),
     path("api/ocr/import/", ImportParsedQuestionsView.as_view(), name="ocr-import"),
 
+    path("api/quiz/", include("apps.quiz_room.urls")),
+
     # Router last — its <pk> catch-alls must not shadow the specific paths above
     path("api/", include(router.urls)),
 ]
