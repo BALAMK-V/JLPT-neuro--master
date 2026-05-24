@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "django_filters",
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "storages",
     "channels",
     "apps.users.apps.UsersConfig",
@@ -56,6 +57,20 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# ── Production security headers ────────────────────────────────────────────────
+# Only apply strict transport security on HTTPS deployments
+SECURE_HSTS_SECONDS = int(env("SECURE_HSTS_SECONDS", "0") or "0")
+SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
+SECURE_HSTS_PRELOAD = SECURE_HSTS_SECONDS > 0
+SECURE_SSL_REDIRECT = env("SECURE_SSL_REDIRECT", "0") == "1"
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = True
 
 ROOT_URLCONF = "jlpt_neuro_master.urls"
 
@@ -130,18 +145,29 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "jlpt_neuro_master.pagination.FlexPageNumberPagination",
     "PAGE_SIZE": 25,
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "60/min",
+        "user": "300/min",
+        "auth": "10/min",       # login / register / password endpoints
+        "password_reset": "5/min",  # forgot-password
+    },
 }
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
     "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", "") or ""
-ANTHROPIC_MODEL = env("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001") or "claude-haiku-4-5-20251001"
+GEMINI_API_KEY = env("GEMINI_API_KEY", "") or ""
+GEMINI_MODEL = env("GEMINI_MODEL", "gemini-2.0-flash-lite") or "gemini-2.0-flash-lite"
+GEMINI_DEV_MOCK = env("GEMINI_DEV_MOCK", "0") == "1"
 
 # Celery — set CELERY_BROKER_URL in .env to activate (e.g. redis://localhost:6379/0)
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", "redis://localhost:6379/0") or "redis://localhost:6379/0"
@@ -181,3 +207,36 @@ if USE_S3:
     DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
 
+# ── Logging ────────────────────────────────────────────────────────────────────
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "apps.audit": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}

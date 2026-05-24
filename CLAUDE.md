@@ -31,9 +31,9 @@ npm run dev
 
 | Service | URL |
 |---------|-----|
-| UI      | http://127.0.0.1:5173/ |
-| API     | http://127.0.0.1:8000/api/ |
-| Admin   | http://127.0.0.1:8000/admin/ |
+| UI      | http://127.0.0.1:5174/ |
+| API     | http://127.0.0.1:8001/api/ |
+| Admin   | http://127.0.0.1:8001/admin/ |
 
 **Demo accounts** (all password `Test@123`):
 

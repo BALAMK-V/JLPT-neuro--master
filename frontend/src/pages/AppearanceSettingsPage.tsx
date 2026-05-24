@@ -6,7 +6,7 @@ import { FontSelector } from "../components/appearance/FontSelector";
 import { PreviewPanel } from "../components/appearance/PreviewPanel";
 import { ThemeToggle } from "../components/appearance/ThemeToggle";
 import { PageHeader } from "../components/PageHeader";
-import { Caption } from "../components/ui";
+import { Caption, CustomSelect } from "../components/ui";
 import type { AnimationLevel, LayoutDensity, StudyCompanionSettings } from "../types";
 
 const TEXT_PRESETS = ["#f5f7fb", "#111827", "#1f2937", "#e8fff8", "#fff7d6", "#ffe7ef"];
@@ -85,19 +85,19 @@ export function AppearanceSettingsPage() {
               </label>
               <label className="label">
                 <span className="label__text">Animation</span>
-                <select className="field" value={appearance.animation_level} onChange={(e) => setAppearancePreview({ ...appearance, animation_level: e.target.value as AnimationLevel })}>
+                <CustomSelect value={appearance.animation_level} onChange={(e) => setAppearancePreview({ ...appearance, animation_level: e.target.value as AnimationLevel })}>
                   <option value="low">Low</option>
                   <option value="normal">Normal</option>
                   <option value="high">High</option>
-                </select>
+                </CustomSelect>
               </label>
               <label className="label">
                 <span className="label__text">Layout density</span>
-                <select className="field" value={appearance.layout_density} onChange={(e) => setAppearancePreview({ ...appearance, layout_density: e.target.value as LayoutDensity })}>
+                <CustomSelect value={appearance.layout_density} onChange={(e) => setAppearancePreview({ ...appearance, layout_density: e.target.value as LayoutDensity })}>
                   <option value="compact">Compact</option>
                   <option value="comfortable">Comfortable</option>
                   <option value="spacious">Spacious</option>
-                </select>
+                </CustomSelect>
               </label>
             </div>
           </section>
@@ -115,12 +115,12 @@ export function AppearanceSettingsPage() {
               </label>
               <label className="label">
                 <span className="label__text">Character</span>
-                <select className="field" value={companion.character_type} onChange={(e) => updateCompanion({ ...companion, character_type: e.target.value as StudyCompanionSettings["character_type"] })}>
+                <CustomSelect value={companion.character_type} onChange={(e) => updateCompanion({ ...companion, character_type: e.target.value as StudyCompanionSettings["character_type"] })}>
                   <option value="daruma">Daruma</option>
                   <option value="maneki">Maneki</option>
                   <option value="kitsune">Kitsune</option>
                   <option value="tanuki">Tanuki</option>
-                </select>
+                </CustomSelect>
               </label>
             </div>
             <Caption style={{ marginTop: 10, display: "block" }}>

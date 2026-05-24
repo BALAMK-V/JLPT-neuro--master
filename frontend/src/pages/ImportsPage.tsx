@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../app/api/client";
 import { apiForm } from "../app/api/form";
 import { PageHeader } from "../components/PageHeader";
+import { CustomSelect } from "../components/ui";
 import { CsvEditor } from "../components/imports/CsvEditor";
 import { parseCsv, serializeCsv } from "../components/imports/csv";
 import {
@@ -365,16 +366,15 @@ export function ImportsPage() {
             {fcDeckMode === "existing" ? (
               fcDecks.length ? (
                 <>
-                  <select
-                    className="field"
+                  <CustomSelect
                     style={{ marginTop: 10, maxWidth: 360 }}
-                    value={fcDeckId}
+                    value={String(fcDeckId)}
                     onChange={(e) => setFcDeckId(Number(e.target.value))}
                   >
                     {fcDecks.map((d) => (
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   {fcDeckId && (() => {
                     const d = fcDecks.find((x) => x.id === fcDeckId);
                     if (!d) return null;
@@ -405,28 +405,28 @@ export function ImportsPage() {
                 </div>
                 <div className="fc-import-new-deck__row">
                   <label className="fc-import-new-deck__label">JLPT level</label>
-                  <select className="field" value={fcNewDeckLevel} onChange={(e) => setFcNewDeckLevel(e.target.value)}>
+                  <CustomSelect value={fcNewDeckLevel} onChange={(e) => setFcNewDeckLevel(e.target.value)}>
                     {["N5", "N4", "N3", "N2", "N1"].map((l) => (
                       <option key={l} value={l}>{l}</option>
                     ))}
-                  </select>
+                  </CustomSelect>
                 </div>
                 <div className="fc-import-new-deck__row">
                   <label className="fc-import-new-deck__label">Deck type</label>
-                  <select className="field" value={fcNewDeckType} onChange={(e) => setFcNewDeckType(e.target.value)}>
+                  <CustomSelect value={fcNewDeckType} onChange={(e) => setFcNewDeckType(e.target.value)}>
                     <option value="custom">Custom</option>
                     <option value="kanji">Kanji</option>
                     <option value="vocab">Vocabulary</option>
                     <option value="combined">Combined (kanji + vocab)</option>
                     <option value="mixed">Mixed (any content)</option>
-                  </select>
+                  </CustomSelect>
                 </div>
                 <div className="fc-import-new-deck__row">
                   <label className="fc-import-new-deck__label">SRS algorithm</label>
-                  <select className="field" value={fcNewDeckAlgo} onChange={(e) => setFcNewDeckAlgo(e.target.value)}>
+                  <CustomSelect value={fcNewDeckAlgo} onChange={(e) => setFcNewDeckAlgo(e.target.value)}>
                     <option value="sm2">SM-2 (classic)</option>
                     <option value="fsrs">FSRS-4.5 (advanced)</option>
-                  </select>
+                  </CustomSelect>
                 </div>
               </div>
             )}

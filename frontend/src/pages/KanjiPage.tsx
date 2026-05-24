@@ -4,6 +4,7 @@ import { getLearningStylePlan } from "../app/learningStyle";
 import { useMe } from "../app/state/user";
 import { PageHeader } from "../components/PageHeader";
 import { KanjiCard } from "../components/KanjiCard";
+import { CustomSelect } from "../components/ui";
 import type { Kanji, Paginated } from "../types";
 
 const PAGE_SIZE = 50;
@@ -73,14 +74,14 @@ export function KanjiPage() {
       ) : null}
 
       <div className="toolbar">
-        <select className="field" value={level} onChange={(e) => setLevel(e.target.value)} style={{ maxWidth: 140 }}>
+        <CustomSelect value={level} onChange={(e) => setLevel(e.target.value)} style={{ maxWidth: 140 }}>
           <option value="">All</option>
           <option value="N5">N5</option>
           <option value="N4">N4</option>
           <option value="N3">N3</option>
           <option value="N2">N2</option>
           <option value="N1">N1</option>
-        </select>
+        </CustomSelect>
         {!plan.reduceChoiceNoise ? (
           <input
             className="field"

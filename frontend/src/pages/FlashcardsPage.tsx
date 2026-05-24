@@ -3,6 +3,8 @@ import { api } from "../app/api/client";
 import { getLearningStylePlan } from "../app/learningStyle";
 import { useMe } from "../app/state/user";
 import { PageHeader } from "../components/PageHeader";
+import { CustomSelect } from "../components/ui";
+import { sanitizeHtml, safeUrl } from "../utils/security";
 import type { FlashCard, FlashDeck, Paginated } from "../types";
 
 // ── Furigana renderer ─────────────────────────────────────────────────────────
@@ -56,6 +58,7 @@ function FuriganaText({
 function CardAudio({ src }: { src: string }) {
   const [playing, setPlaying] = useState(false);
   const ref = useRef<HTMLAudioElement>(null);
+  const safeSrc = safeUrl(src);
 
   const toggle = () => {
     const el = ref.current;
@@ -69,9 +72,11 @@ function CardAudio({ src }: { src: string }) {
     }
   };
 
+  if (!safeSrc) return null;
+
   return (
     <div className="fc-audio">
-      <audio ref={ref} src={src} onEnded={() => setPlaying(false)} preload="none" />
+      <audio ref={ref} src={safeSrc} onEnded={() => setPlaying(false)} preload="none" />
       <button
         className={`fc-audio__btn${playing ? " fc-audio__btn--playing" : ""}`}
         onClick={(e) => { e.stopPropagation(); toggle(); }}
@@ -100,7 +105,10 @@ function CardBackContent({ card }: { card: FlashCard }) {
             <span className="fc-rich-value">{card.kanji_kunyomi}</span>
           </div>
         )}
-        <div className="fc-rich-meaning">{card.kanji_meaning || card.back}</div>
+        <div
+          className="fc-rich-meaning"
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(card.kanji_meaning || card.back) }}
+        />
       </div>
     );
   }
@@ -113,11 +121,19 @@ function CardBackContent({ card }: { card: FlashCard }) {
             <span className="fc-rich-value">{card.vocab_reading_detail}</span>
           </div>
         )}
-        <div className="fc-rich-meaning">{card.vocab_meaning || card.back}</div>
+        <div
+          className="fc-rich-meaning"
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(card.vocab_meaning || card.back) }}
+        />
       </div>
     );
   }
-  return <div className="fc-anki-back__text">{card.back}</div>;
+  return (
+    <div
+      className="fc-anki-back__text"
+      dangerouslySetInnerHTML={{ __html: sanitizeHtml(card.back) }}
+    />
+  );
 }
 
 // ── Edit card modal ───────────────────────────────────────────────────────────
@@ -696,7 +712,7 @@ function ReviewView({
                     className="fc-anki-front__text"
                   />
                   {current.image && (
-                    <img className="fc-card-image" src={current.image} alt="" />
+                    <img className="fc-card-image" src={safeUrl(current.image)} alt="" />
                   )}
                   <div className="fc-anki-hint">Press Space / tap to reveal</div>
                 </>
@@ -725,7 +741,7 @@ function ReviewView({
               {current && <CardBackContent card={current} />}
               {current?.audio && <CardAudio src={current.audio} />}
               {current?.image && (
-                <img className="fc-card-image fc-card-image--back" src={current.image} alt="" />
+                <img className="fc-card-image fc-card-image--back" src={safeUrl(current.image)} alt="" />
               )}
             </div>
           </div>
@@ -939,15 +955,16 @@ export function FlashcardsPage() {
             <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
               <div className="fc-session-limit">
                 <label className="fc-session-limit__label">Cards / session</label>
-                <select
-                  className="field fc-session-limit__select"
-                  value={sessionLimit}
+                <CustomSelect
+                  size="sm"
+                  style={{ maxWidth: 90 }}
+                  value={String(sessionLimit)}
                   onChange={(e) => setSessionLimit(Number(e.target.value))}
                 >
                   {[5, 10, 15, 20, 25, 30, 50, 100].map((n) => (
                     <option key={n} value={n}>{n}</option>
                   ))}
-                </select>
+                </CustomSelect>
               </div>
               <button
                 className="btn btn--primary"

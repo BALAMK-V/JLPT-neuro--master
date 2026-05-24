@@ -42,7 +42,7 @@ function wsUrl(code: string) {
   const host = window.location.hostname;
   const proto = window.location.protocol === "https:" ? "wss" : "ws";
   const token = localStorage.getItem("access_token") || "";
-  return `${proto}://${host}:8000/ws/quiz/${code}/?token=${encodeURIComponent(token)}`;
+  return `${proto}://${host}:8001/ws/quiz/${code}/?token=${encodeURIComponent(token)}`;
 }
 
 const LEVELS: JLPTLevel[] = ["N5", "N4", "N3", "N2", "N1"];

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { ErrorBoundary } from "../components/ErrorBoundary";
+import { AppLogo } from "../components/AppLogo";
 import { DashboardPage } from "../pages/DashboardPage";
 import { AppearanceSettingsPage } from "../pages/AppearanceSettingsPage";
 import { FlashcardsPage } from "../pages/FlashcardsPage";
@@ -113,7 +115,11 @@ function AppShell() {
   }, [route, me?.is_staff]);
 
   if (!me) {
-    return <AuthPage />;
+    return (
+      <ErrorBoundary>
+        <AuthPage />
+      </ErrorBoundary>
+    );
   }
 
   return (
@@ -131,6 +137,7 @@ function AppShell() {
             <button className="btn menu" onClick={() => setMenuOpen(true)} aria-label="Open menu">
               Menu
             </button>
+            <AppLogo size={28} />
             <div>
               <div className="topbar__title">{def.label}</div>
               <div className="topbar__sub">{def.description}</div>
@@ -156,7 +163,9 @@ function AppShell() {
           </div>
         </header>
 
-        <main className="content">{page}</main>
+        <main className="content">
+          <ErrorBoundary key={route}>{page}</ErrorBoundary>
+        </main>
         <FocusAudioWidget />
         <CompanionWidget />
         <QuickNoteButton />
@@ -167,9 +176,11 @@ function AppShell() {
 
 export function App() {
   return (
-    <UserProvider>
-      <AppWithAppearance />
-    </UserProvider>
+    <ErrorBoundary>
+      <UserProvider>
+        <AppWithAppearance />
+      </UserProvider>
+    </ErrorBoundary>
   );
 }
 

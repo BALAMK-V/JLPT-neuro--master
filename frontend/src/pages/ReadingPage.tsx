@@ -5,7 +5,7 @@ import { useMe } from "../app/state/user";
 import { PageHeader } from "../components/PageHeader";
 import { ReadingMcq } from "../components/reading/ReadingMcq";
 import { ReadingPassageView } from "../components/reading/ReadingPassageView";
-import { Meta } from "../components/ui";
+import { CustomSelect, Meta } from "../components/ui";
 import type { Paginated, ReadingPassage, ReadingQuestion } from "../types";
 
 export function ReadingPage() {
@@ -72,25 +72,25 @@ export function ReadingPage() {
       ) : null}
 
       <div className="toolbar">
-        <select className="field" value={level} onChange={(e) => setLevel(e.target.value)} style={{ maxWidth: 140 }}>
+        <CustomSelect value={level} onChange={(e) => setLevel(e.target.value)} style={{ maxWidth: 140 }}>
           <option value="">All</option>
           <option value="N5">N5</option>
           <option value="N4">N4</option>
           <option value="N3">N3</option>
           <option value="N2">N2</option>
           <option value="N1">N1</option>
-        </select>
+        </CustomSelect>
 
-        <select className="field" value={pattern} onChange={(e) => setPattern(e.target.value)} style={{ maxWidth: 220 }}>
+        <CustomSelect value={pattern} onChange={(e) => setPattern(e.target.value)} style={{ maxWidth: 220 }}>
           <option value="short">short</option>
           <option value="medium">medium</option>
           <option value="long">long</option>
           <option value="integrated">integrated</option>
           <option value="info_search">info_search</option>
-        </select>
+        </CustomSelect>
 
         {selected && !plan.reduceChoiceNoise ? (
-          <select className="field" value={questionType} onChange={(e) => setQuestionType(e.target.value)} style={{ maxWidth: 220 }}>
+          <CustomSelect value={questionType} onChange={(e) => setQuestionType(e.target.value)} style={{ maxWidth: 220 }}>
             <option value="">All question types</option>
             <option value="main_idea">main_idea</option>
             <option value="detail">detail</option>
@@ -100,7 +100,7 @@ export function ReadingPage() {
             <option value="reference">reference</option>
             <option value="info_search">info_search</option>
             <option value="other">other</option>
-          </select>
+          </CustomSelect>
         ) : null}
 
         <button className="btn" onClick={() => loadList()} disabled={loading}>

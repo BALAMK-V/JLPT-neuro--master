@@ -1,9 +1,5 @@
 """
-AI-powered JLPT question paper cleaner.
-
-Uses the Anthropic Claude API to transform raw OCR text into clean,
-structured question JSON — removing instructions, examples, watermarks,
-headers, scoring guides, and other noise that OCR picks up from scanned papers.
+AI-powered JLPT question paper cleaner using Google Gemini.
 
 Falls back gracefully to an empty list if the API key is not configured
 or if the API call fails, so the regex parser result is always the baseline.
@@ -18,8 +14,6 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-# The maximum characters of OCR text we send per request.
-# Claude's context window is large, but very long papers benefit from chunking.
 MAX_CHARS = 12_000
 
 SYSTEM_PROMPT = """You are an expert JLPT (Japanese Language Proficiency Test) question paper processor.
@@ -39,22 +33,9 @@ Real JLPT exam questions that have:
 - Answer keys, score tables, rubrics
 - Watermarks, exam centre names, copyright notices
 - Page numbers, headers, footers
-- Time/duration notes
-- "Do not open until told" type notices
-- Any line that is clearly not part of an actual question
 
 === SECTION DETECTION ===
 Map to one of: "vocabulary", "grammar", "reading", "listening"
-- 語彙 / 文字 / 言葉 → vocabulary
-- 文法 / ぶんぽう → grammar
-- 読解 / どっかい → reading
-- 聴解 / ちょうかい → listening
-- When unsure, use "vocabulary"
-
-=== QUESTION TYPE DETECTION ===
-- Has 3–4 options → "multiple_choice"
-- Has （ ）or blank to fill → "fill_blank"
-- Has ★ or rearrangement markers → "sentence_arrange"
 
 === OUTPUT FORMAT ===
 Return ONLY a valid JSON array. No explanation, no markdown, no code fences.
@@ -77,24 +58,48 @@ Return ONLY a valid JSON array. No explanation, no markdown, no code fences.
 If no real questions are found, return an empty array: []
 """
 
+MOCK_QUESTIONS = [
+    {
+        "section": "vocabulary",
+        "order": 1,
+        "question_text": "彼女は毎朝（　　）を飲みます。",
+        "question_type": "multiple_choice",
+        "options": [
+            {"label": "A", "text": "コーヒー"},
+            {"label": "B", "text": "じてんしゃ"},
+            {"label": "C", "text": "えんぴつ"},
+            {"label": "D", "text": "かばん"},
+        ],
+    },
+    {
+        "section": "grammar",
+        "order": 2,
+        "question_text": "早く起きる（　　）、遅刻しなかった。",
+        "question_type": "multiple_choice",
+        "options": [
+            {"label": "A", "text": "ので"},
+            {"label": "B", "text": "のに"},
+            {"label": "C", "text": "から"},
+            {"label": "D", "text": "ても"},
+        ],
+    },
+]
+
 
 def _get_client():
-    """Return an Anthropic client, or None if the SDK/key is not available."""
-    api_key = getattr(settings, "ANTHROPIC_API_KEY", "") or ""
+    api_key = getattr(settings, "GEMINI_API_KEY", "") or ""
     if not api_key:
         return None
     try:
-        import anthropic
-        return anthropic.Anthropic(api_key=api_key)
+        from google import genai
+        return genai.Client(api_key=api_key)
     except ImportError:
-        logger.warning("anthropic package not installed — AI cleaning unavailable")
+        logger.warning("google-genai package not installed — AI cleaning unavailable")
         return None
 
 
 def _parse_json_response(text: str) -> list[dict[str, Any]]:
-    """Extract JSON array from the model response, tolerating minor formatting issues."""
     text = text.strip()
-    # Strip markdown code fences if the model added them despite instructions
     if text.startswith("```"):
         lines = text.splitlines()
         text = "\n".join(
@@ -105,7 +110,6 @@ def _parse_json_response(text: str) -> list[dict[str, Any]]:
         if isinstance(result, list):
             return result
     except json.JSONDecodeError:
-        # Try to find the array by locating the first '[' and last ']'
         start = text.find("[")
         end = text.rfind("]")
         if start != -1 and end != -1 and end > start:
@@ -118,9 +122,9 @@ def _parse_json_response(text: str) -> list[dict[str, Any]]:
 
 
 def _clean_chunk(client, chunk: str, level: str) -> list[dict[str, Any]]:
-    """Send one chunk of OCR text to Claude and return parsed questions."""
-    import anthropic
+    from google.genai import types
 
+    model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash-lite")
     user_message = (
         f"JLPT Level: {level}\n\n"
         f"--- RAW OCR TEXT START ---\n{chunk}\n--- RAW OCR TEXT END ---\n\n"
@@ -128,40 +132,37 @@ def _clean_chunk(client, chunk: str, level: str) -> list[dict[str, Any]]:
     )
 
     try:
-        message = client.messages.create(
-            model="claude-haiku-4-5-20251001",   # fast + cheap; upgrade to sonnet for harder papers
-            max_tokens=4096,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_message}],
+        response = client.models.generate_content(
+            model=model_name,
+            contents=user_message,
+            config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT),
         )
-        raw = message.content[0].text if message.content else ""
+        raw = response.text if response.text else ""
         return _parse_json_response(raw)
-
-    except anthropic.APIError as exc:
-        logger.error("Anthropic API error during AI cleaning: %s", exc)
+    except Exception as exc:
+        logger.error("Gemini API error during AI cleaning: %s", exc)
         return []
 
 
 def ai_clean_questions(ocr_text: str, level: str = "N3") -> list[dict[str, Any]]:
     """
-    Main entry point.
-
-    Takes raw OCR text and returns a cleaned list of question dicts.
-    Returns an empty list if the API key is not set or the call fails —
-    the caller should fall back to the regex parser result in that case.
+    Main entry point. Takes raw OCR text and returns a cleaned list of question dicts.
+    Returns mock data in dev mode, empty list on failure (caller falls back to regex parser).
     """
+    if getattr(settings, "GEMINI_DEV_MOCK", False):
+        logger.info("AI cleaner: using dev mock response")
+        return MOCK_QUESTIONS
+
     client = _get_client()
     if client is None:
         return []
 
-    # Split into chunks so very long papers don't hit context limits
     chunks = [ocr_text[i : i + MAX_CHARS] for i in range(0, len(ocr_text), MAX_CHARS)]
     all_questions: list[dict[str, Any]] = []
     order_offset = 0
 
     for chunk in chunks:
         questions = _clean_chunk(client, chunk, level)
-        # Re-number orders to be continuous across chunks
         for q in questions:
             order_offset += 1
             q["order"] = order_offset

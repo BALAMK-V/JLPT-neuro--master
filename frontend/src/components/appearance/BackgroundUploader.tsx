@@ -1,3 +1,4 @@
+import { CustomSelect } from "../ui";
 import type { AppearanceSettings, BackgroundType } from "../../types";
 
 export function BackgroundUploader({
@@ -24,11 +25,11 @@ export function BackgroundUploader({
     <div className="settings-stack">
       <label className="label">
         <span className="label__text">Background type</span>
-        <select className="field" value={settings.background_type} onChange={(e) => onChange({ ...settings, background_type: e.target.value as BackgroundType })}>
+        <CustomSelect value={settings.background_type} onChange={(e) => onChange({ ...settings, background_type: e.target.value as BackgroundType })}>
           <option value="color">Solid color</option>
           <option value="gradient">Gradient</option>
           <option value="image">Image</option>
-        </select>
+        </CustomSelect>
       </label>
 
       {settings.background_type === "color" ? (
@@ -57,10 +58,10 @@ export function BackgroundUploader({
           {value.url ? <div className="appearance-image-preview" style={{ backgroundImage: `url("${String(value.url)}")` }} /> : null}
           <label className="label">
             <span className="label__text">Fit</span>
-            <select className="field" value={String(value.fit || "cover")} onChange={(e) => updateValue({ fit: e.target.value })}>
+            <CustomSelect value={String(value.fit || "cover")} onChange={(e) => updateValue({ fit: e.target.value })}>
               <option value="cover">Cover</option>
               <option value="contain">Contain</option>
-            </select>
+            </CustomSelect>
           </label>
         </>
       ) : null}

@@ -118,10 +118,32 @@ function lightBackgroundValue(s: AppearanceSettings) {
 
 function applyAppearance(s: AppearanceSettings) {
   const root = document.documentElement;
-  const mode = s.theme_mode === "auto" ? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark") : s.theme_mode;
+  const mode =
+    s.theme_mode === "auto"
+      ? window.matchMedia("(prefers-color-scheme: light)").matches
+        ? "light"
+        : "dark"
+      : s.theme_mode;
+
   root.dataset.themeMode = mode;
   root.dataset.density = s.layout_density;
   root.dataset.animationLevel = s.animation_level;
+
+  // Sentinel is a self-contained theme — its CSS vars are fully defined in
+  // global.css and should not be overridden by user customisation settings.
+  // We only allow font-size passthrough so accessibility preferences still apply.
+  if (mode === "sentinel") {
+    root.style.setProperty("--app-font-size", fontSizeValue(s.font_size));
+    // Remove any inline overrides left from a previous theme so the CSS block wins.
+    for (const prop of [
+      "--font", "--app-font-weight", "--text", "--radius",
+      "--shadow", "--app-bg", "--bg-blur",
+    ]) {
+      root.style.removeProperty(prop);
+    }
+    return;
+  }
+
   root.style.setProperty("--font", fontFamilyValue(s.font_family));
   root.style.setProperty("--app-font-size", fontSizeValue(s.font_size));
   root.style.setProperty("--app-font-weight", fontWeightValue(s.font_weight));

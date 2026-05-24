@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CustomSelect } from "../ui";
 import type { ParsedQuestion, QuestionSection, QuestionType } from "../../api/exam";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -175,21 +176,21 @@ function QuestionRow({ question, index, total, onChange, onDelete, onMoveUp, onM
       <div className="qed-edit__meta">
         <div className="qed-edit__field">
           <label>Section</label>
-          <select
+          <CustomSelect
             value={draft.section}
             onChange={(e) => setDraft({ ...draft, section: e.target.value as QuestionSection })}
           >
             {SECTIONS.map((s) => <option key={s} value={s}>{SECTION_LABEL[s]}</option>)}
-          </select>
+          </CustomSelect>
         </div>
         <div className="qed-edit__field">
           <label>Type</label>
-          <select
+          <CustomSelect
             value={draft.question_type}
             onChange={(e) => setDraft({ ...draft, question_type: e.target.value as QuestionType })}
           >
             {QTYPES.map((t) => <option key={t} value={t}>{QTYPE_LABEL[t]}</option>)}
-          </select>
+          </CustomSelect>
         </div>
       </div>
 

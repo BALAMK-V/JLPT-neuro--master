@@ -30,6 +30,6 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY backend/ /app/
 
-EXPOSE 8000
+EXPOSE 8001
 
-CMD ["sh", "-lc", "python docker/wait_for_db.py && python manage.py migrate --run-syncdb --noinput && python manage.py seed_demo && daphne -b 0.0.0.0 -p 8000 jlpt_neuro_master.asgi:application"]
+CMD ["sh", "-lc", "python docker/wait_for_db.py && python manage.py migrate --run-syncdb --noinput && python manage.py seed_demo && daphne -b 0.0.0.0 -p 8001 jlpt_neuro_master.asgi:application"]

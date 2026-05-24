@@ -1,3 +1,4 @@
+import { CustomSelect } from "../ui";
 import type { FontFamily, FontSize, FontWeight } from "../../types";
 
 export function FontSelector({
@@ -19,28 +20,28 @@ export function FontSelector({
     <div className="settings-grid">
       <label className="label">
         <span className="label__text">Font family</span>
-        <select className="field" value={family} onChange={(e) => onFamily(e.target.value as FontFamily)}>
+        <CustomSelect value={family} onChange={(e) => onFamily(e.target.value as FontFamily)}>
           <option value="sans">Sans</option>
           <option value="serif">Serif</option>
           <option value="rounded">Rounded</option>
           <option value="mono">Mono</option>
-        </select>
+        </CustomSelect>
       </label>
       <label className="label">
         <span className="label__text">Font size</span>
-        <select className="field" value={size} onChange={(e) => onSize(e.target.value as FontSize)}>
+        <CustomSelect value={size} onChange={(e) => onSize(e.target.value as FontSize)}>
           <option value="small">Small</option>
           <option value="medium">Medium</option>
           <option value="large">Large</option>
-        </select>
+        </CustomSelect>
       </label>
       <label className="label">
         <span className="label__text">Font weight</span>
-        <select className="field" value={weight} onChange={(e) => onWeight(e.target.value as FontWeight)}>
+        <CustomSelect value={weight} onChange={(e) => onWeight(e.target.value as FontWeight)}>
           <option value="light">Light</option>
           <option value="normal">Normal</option>
           <option value="bold">Bold</option>
-        </select>
+        </CustomSelect>
       </label>
     </div>
   );

@@ -47,3 +47,6 @@ postgres_data/
 *.bak
 *.tmp
 *.cache
+
+# Claude Code
+.claude/worktrees/

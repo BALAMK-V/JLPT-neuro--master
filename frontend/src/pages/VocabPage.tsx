@@ -5,6 +5,7 @@ import { getLearningStylePlan } from "../app/learningStyle";
 import { useMe } from "../app/state/user";
 import { PageHeader } from "../components/PageHeader";
 import { VocabCard } from "../components/VocabCard";
+import { CustomSelect } from "../components/ui";
 import type { Paginated, Vocab } from "../types";
 
 const PAGE_SIZE = 50;
@@ -78,14 +79,14 @@ export function VocabPage() {
       ) : null}
 
       <div className="toolbar">
-        <select className="field" value={level} onChange={(e) => setLevel(e.target.value)} style={{ maxWidth: 140 }}>
+        <CustomSelect value={level} onChange={(e) => setLevel(e.target.value)} style={{ maxWidth: 140 }}>
           <option value="">All</option>
           <option value="N5">N5</option>
           <option value="N4">N4</option>
           <option value="N3">N3</option>
           <option value="N2">N2</option>
           <option value="N1">N1</option>
-        </select>
+        </CustomSelect>
         {!plan.reduceChoiceNoise ? (
           <input
             className="field"
@@ -103,15 +104,14 @@ export function VocabPage() {
           )}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <select
-            className="field"
+          <CustomSelect
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as "default" | "frequency")}
             style={{ maxWidth: 180, fontSize: 12 }}
           >
             <option value="default">Sort: Default</option>
             <option value="frequency">Sort: Most Common First</option>
-          </select>
+          </CustomSelect>
           <button
             className="btn"
             onClick={() => setShowFurigana((v) => !v)}

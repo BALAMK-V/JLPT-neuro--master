@@ -14,7 +14,11 @@ class Note(models.Model):
     reference_type = models.CharField(max_length=30, blank=True)  # kanji/vocab/listening/session/...
     reference_id = models.PositiveBigIntegerField(null=True, blank=True)
 
+    title = models.CharField(max_length=200, blank=True, default="")
     content = models.TextField()
+    color = models.CharField(max_length=20, blank=True, default="")
+    pinned = models.BooleanField(default=False)
+    archived = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

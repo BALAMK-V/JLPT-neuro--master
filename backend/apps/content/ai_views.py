@@ -1,4 +1,4 @@
-"""AI-powered vocabulary explanation using Claude."""
+"""AI-powered vocabulary explanation using Google Gemini."""
 from __future__ import annotations
 
 import logging
@@ -21,16 +21,25 @@ Given the word, its reading, basic meaning, and JLPT level, provide:
 
 Keep it concise and practical. Plain text only, no markdown headers or bullet symbols."""
 
+MOCK_EXPLANATION = (
+    "This word carries a nuanced sense of ongoing effort rather than a single action, "
+    "often used in formal and written contexts. "
+    "Students sometimes confuse it with similar words that imply a completed result — "
+    "the key difference is that this one emphasises the process.\n\n"
+    "Example: 彼女は毎晩その言葉を練習しています。 (She practices that word every evening.)\n\n"
+    "Mnemonic: Picture someone repeatedly tracing the kanji on paper — the repetition is built into the meaning."
+)
+
 
 def _get_client():
-    api_key = getattr(settings, "ANTHROPIC_API_KEY", "") or ""
+    api_key = getattr(settings, "GEMINI_API_KEY", "") or ""
     if not api_key:
         return None
     try:
-        import anthropic
-        return anthropic.Anthropic(api_key=api_key)
+        from google import genai
+        return genai.Client(api_key=api_key)
     except ImportError:
-        logger.warning("anthropic package not installed")
+        logger.warning("google-genai package not installed")
         return None
 
 
@@ -40,23 +49,34 @@ class VocabExplainView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk: int) -> Response:
-        if not getattr(settings, "ANTHROPIC_API_KEY", ""):
-            return Response(
-                {"detail": "AI explanation is not configured. Add ANTHROPIC_API_KEY to .env."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
-
         try:
             vocab = Vocabulary.objects.get(pk=pk)
         except Vocabulary.DoesNotExist:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        if getattr(settings, "GEMINI_DEV_MOCK", False):
+            logger.info("Vocab explain: using dev mock response")
+            return Response({
+                "word": vocab.word,
+                "reading": vocab.reading,
+                "jlpt_level": vocab.jlpt_level,
+                "explanation": MOCK_EXPLANATION,
+            })
+
+        if not getattr(settings, "GEMINI_API_KEY", ""):
+            return Response(
+                {"detail": "AI explanation is not configured. Add GEMINI_API_KEY to .env."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
         client = _get_client()
         if client is None:
             return Response(
-                {"detail": "Anthropic package not installed."},
+                {"detail": "google-genai package not installed."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
+
+        from google.genai import types
 
         user_message = (
             f"JLPT Level: {vocab.jlpt_level}\n"
@@ -66,23 +86,21 @@ class VocabExplainView(APIView):
             "Provide a concise learning explanation."
         )
 
+        model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash-lite")
         try:
-            import anthropic
-            model = getattr(settings, "ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
-            message = client.messages.create(
-                model=model,
-                max_tokens=600,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_message}],
+            response = client.models.generate_content(
+                model=model_name,
+                contents=user_message,
+                config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT),
             )
-            explanation = message.content[0].text if message.content else ""
+            explanation = response.text if response.text else ""
             return Response({
                 "word": vocab.word,
                 "reading": vocab.reading,
                 "jlpt_level": vocab.jlpt_level,
                 "explanation": explanation,
             })
-        except anthropic.APIError as exc:
+        except Exception as exc:
             logger.error("Vocab explain API error for vocab %d: %s", pk, exc)
             return Response(
                 {"detail": f"AI request failed: {exc}"},

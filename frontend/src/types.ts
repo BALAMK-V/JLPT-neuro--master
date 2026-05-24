@@ -92,7 +92,7 @@ export type Me = {
   level_info: LevelInfo;
 };
 
-export type ThemeMode = "light" | "dark" | "auto";
+export type ThemeMode = "light" | "dark" | "auto" | "sentinel";
 export type FontFamily = "sans" | "serif" | "rounded" | "mono";
 export type FontSize = "small" | "medium" | "large";
 export type FontWeight = "light" | "normal" | "bold";
@@ -130,7 +130,11 @@ export type Note = {
   note_type: "quick" | "context" | "session";
   reference_type: string;
   reference_id: number | null;
+  title: string;
   content: string;
+  color: string;
+  pinned: boolean;
+  archived: boolean;
   created_at: string;
   updated_at: string;
 };

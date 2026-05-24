@@ -27,7 +27,11 @@ export function QuickNoteButton() {
         } else {
           const created = await api<Note>("/notes/", "POST", {
             note_type: "quick",
+            title: "",
             content,
+            color: "",
+            pinned: false,
+            archived: false,
             reference_type: "",
             reference_id: null,
           });

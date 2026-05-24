@@ -5,7 +5,7 @@ import { PageHeader } from "../components/PageHeader";
 import { useMe } from "../app/state/user";
 import { defaultAliasForType, learningLabelFromAlias, learningTypeFromAlias, type LearningAlias } from "../app/labels";
 import type { LearningType, Me } from "../types";
-import { Caption, Meta } from "../components/ui";
+import { Caption, CustomSelect, Meta } from "../components/ui";
 
 function parseApiError(e: unknown): string {
   try {
@@ -253,15 +253,13 @@ export function ProfilePage() {
           <div style={{ display: "grid", gap: 18 }}>
             <div>
               <Caption style={{ display: "block", marginBottom: 6 }}>JLPT Target Level</Caption>
-              <select
-                className="field"
+              <CustomSelect
                 value={me.profile.jlpt_level}
-                disabled={saving}
                 onChange={(e) => saveLevel(e.target.value)}
                 style={{ maxWidth: 160 }}
               >
                 {["N5", "N4", "N3", "N2", "N1"].map((l) => <option key={l} value={l}>{l}</option>)}
-              </select>
+              </CustomSelect>
             </div>
 
             <div>
@@ -298,10 +296,8 @@ export function ProfilePage() {
               {me.profile.reminders_enabled && (
                 <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
                   <Caption>Interval</Caption>
-                  <select
-                    className="field"
-                    value={me.profile.reminder_interval_minutes}
-                    disabled={prefSaving}
+                  <CustomSelect
+                    value={String(me.profile.reminder_interval_minutes)}
                     onChange={(e) => saveStudyPrefs({ reminder_interval_minutes: parseInt(e.target.value) })}
                     style={{ maxWidth: 180 }}
                   >
@@ -310,7 +306,7 @@ export function ProfilePage() {
                     <option value={120}>Every 2 hours</option>
                     <option value={240}>Every 4 hours</option>
                     <option value={480}>Every 8 hours</option>
-                  </select>
+                  </CustomSelect>
                 </div>
               )}
             </div>

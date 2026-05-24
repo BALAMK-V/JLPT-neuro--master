@@ -15,8 +15,8 @@ pdf2image>=1.16
 # Optional: uncomment for Google Cloud Vision (higher-accuracy Japanese OCR)
 # google-cloud-vision>=3.4
 
-# AI question cleaning and vocabulary explanation (set ANTHROPIC_API_KEY in .env to enable)
-anthropic>=0.30.0
+# AI question cleaning and vocabulary explanation (set GEMINI_API_KEY in .env to enable)
+google-genai>=1.0.0
 
 # Celery task queue for background OCR (set CELERY_BROKER_URL in .env to activate)
 celery>=5.3
@@ -32,4 +32,7 @@ fsrs>=1.0
 
 # Multi-format flashcard import (Excel/XLSX support)
 openpyxl>=3.1
+
+# Security: rate limiting for auth and sensitive endpoints
+django-ratelimit>=4.1
 

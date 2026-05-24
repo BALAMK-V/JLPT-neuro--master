@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiNoAuth } from "../app/api/client";
 import { useMe } from "../app/state/user";
+import { AppLogo } from "../components/AppLogo";
 
 type AuthView = "login" | "register" | "forgot" | "sent" | "reset";
 
@@ -492,21 +493,25 @@ function BrandPanel() {
       <div className="auth-brand__deco" aria-hidden>語</div>
 
       <div className="auth-brand__content">
+        <div className="auth-brand__logo-wrap">
+          <AppLogo size={68} />
+        </div>
+
         <div className="auth-brand__logo">
-          <span className="auth-brand__jp">日本語</span>
-          <span className="auth-brand__en">JLPT Neuro Master</span>
+          <span className="auth-brand__jp">JLPT</span>
+          <span className="auth-brand__en">Neuro Master</span>
         </div>
 
         <p className="auth-brand__tagline">
-          Master Japanese with neural intelligence
+          Intelligence-driven Japanese study system for JLPT mastery.
         </p>
 
         <ul className="auth-brand__features">
-          <li><span className="auth-feat-dot" />Spaced repetition flashcards (SM-2 &amp; FSRS)</li>
-          <li><span className="auth-feat-dot" />JLPT N5–N1 exam preparation</li>
-          <li><span className="auth-feat-dot" />AI grammar check &amp; sentence mining</li>
-          <li><span className="auth-feat-dot" />Listening, Reading &amp; Speaking practice</li>
-          <li><span className="auth-feat-dot" />Neuro-adaptive learning profiles</li>
+          <li><span className="auth-feat-dot" aria-hidden="true">◈</span>Spaced repetition flashcards (SM-2 &amp; FSRS)</li>
+          <li><span className="auth-feat-dot" aria-hidden="true">◈</span>JLPT N5–N1 full exam preparation</li>
+          <li><span className="auth-feat-dot" aria-hidden="true">◈</span>AI grammar check &amp; sentence mining</li>
+          <li><span className="auth-feat-dot" aria-hidden="true">◈</span>Listening, Reading &amp; Speaking practice</li>
+          <li><span className="auth-feat-dot" aria-hidden="true">◈</span>Neuro-adaptive learning profiles</li>
         </ul>
       </div>
 

@@ -2,24 +2,25 @@ import { useState } from "react";
 import type { RouteDef, RouteKey } from "../app/state/route";
 import { useMe } from "../app/state/user";
 import { useAppearance } from "../app/state/appearance";
+import { AppLogo } from "./AppLogo";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 const ICONS: Partial<Record<RouteKey, string>> = {
-  dashboard:      "📊",
-  flashcards:     "🃏",
+  dashboard:      "▦",
+  flashcards:     "◫",
   kanji:          "漢",
   vocab:          "語",
   grammar:        "文",
   listening:      "♪",
-  reading:        "📖",
+  reading:        "≡",
   tests:          "✎",
-  jlptExam:       "🎓",
+  jlptExam:       "◇",
   aiExamGen:      "✦",
   grammarCheck:   "✱",
   speakingMode:   "◎",
-  sentenceMining: "⛏",
-  multiplayerQuiz:"⚡",
+  sentenceMining: "◆",
+  multiplayerQuiz:"⊕",
   notes:          "✏",
   sessions:       "◷",
   profile:        "◉",
@@ -52,7 +53,7 @@ const GROUPS: MenuGroup[] = [
   },
   {
     label: "Practice",
-    icon: "🃏",
+    icon: "◫",
     keys: ["flashcards", "tests", "jlptExam"],
   },
   {
@@ -148,10 +149,10 @@ export function SideMenu({
       <aside className={open ? "sidebar sidebar--open" : "sidebar"} aria-label="Side menu">
         {/* Brand */}
         <div className="sidebar__brand">
-          <img src="/app_icon.png" alt="" className="sidebar__icon" />
+          <AppLogo size={38} />
           <div>
             <div className="sidebar__title">JLPT Neuro</div>
-            <div className="sidebar__subtitle">N5–N1</div>
+            <div className="sidebar__subtitle">Intelligence System</div>
           </div>
         </div>
 

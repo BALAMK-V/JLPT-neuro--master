@@ -3,7 +3,7 @@ import { api } from "../app/api/client";
 import { getLearningStylePlan } from "../app/learningStyle";
 import { useMe } from "../app/state/user";
 import { PageHeader } from "../components/PageHeader";
-import { Caption } from "../components/ui";
+import { Caption, CustomSelect } from "../components/ui";
 import type { GrammarQuestion, Paginated } from "../types";
 
 function GrammarCard({ q }: { q: GrammarQuestion }) {
@@ -128,32 +128,32 @@ export function GrammarPage() {
       ) : null}
 
       <div className="toolbar">
-        <select className="field" value={level} onChange={(e) => setLevel(e.target.value)} style={{ maxWidth: 140 }}>
+        <CustomSelect value={level} onChange={(e) => setLevel(e.target.value)} style={{ maxWidth: 140 }}>
           <option value="">All</option>
           <option value="N5">N5</option>
           <option value="N4">N4</option>
           <option value="N3">N3</option>
           <option value="N2">N2</option>
           <option value="N1">N1</option>
-        </select>
+        </CustomSelect>
 
-        <select className="field" value={section} onChange={(e) => setSection(e.target.value)} style={{ maxWidth: 240 }}>
+        <CustomSelect value={section} onChange={(e) => setSection(e.target.value)} style={{ maxWidth: 240 }}>
           <option value="">All sections</option>
           <option value="bunpo_form">bunpo_form</option>
           <option value="sentence_build">sentence_build</option>
           <option value="text_grammar">text_grammar</option>
           <option value="other">other</option>
-        </select>
+        </CustomSelect>
 
         {!plan.reduceChoiceNoise ? (
-          <select className="field" value={qtype} onChange={(e) => setQtype(e.target.value)} style={{ maxWidth: 240 }}>
+          <CustomSelect value={qtype} onChange={(e) => setQtype(e.target.value)} style={{ maxWidth: 240 }}>
             <option value="">All types</option>
             <option value="choose">choose</option>
             <option value="fill_blank">fill_blank</option>
             <option value="reorder">reorder</option>
             <option value="error_find">error_find</option>
             <option value="other">other</option>
-          </select>
+          </CustomSelect>
         ) : null}
 
         <button className="btn" onClick={() => { setSection(""); setQtype(""); }} disabled={loading}>

@@ -171,7 +171,7 @@ export const examApi = {
   // OCR
   uploadPaper: (formData: FormData) => {
     const token = localStorage.getItem("access_token");
-    return fetch(`${(import.meta as any).env?.VITE_API_BASE ?? "http://127.0.0.1:8000/api"}/ocr/upload/`, {
+    return fetch(`${(import.meta as any).env?.VITE_API_BASE ?? "http://127.0.0.1:8001/api"}/ocr/upload/`, {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,

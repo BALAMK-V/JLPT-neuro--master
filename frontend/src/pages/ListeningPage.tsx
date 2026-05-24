@@ -3,7 +3,7 @@ import { api, API_BASE } from "../app/api/client";
 import { getLearningStylePlan } from "../app/learningStyle";
 import { useMe } from "../app/state/user";
 import { PageHeader } from "../components/PageHeader";
-import { Caption } from "../components/ui";
+import { Caption, CustomSelect } from "../components/ui";
 import type { ListeningQuestion, Paginated } from "../types";
 
 function resolveMediaUrl(pathOrUrl: string) {
@@ -47,16 +47,16 @@ export function ListeningPage() {
       ) : null}
 
       <div className="toolbar">
-        <select className="field" value={level} onChange={(e) => setLevel(e.target.value)} style={{ maxWidth: 140 }}>
+        <CustomSelect value={level} onChange={(e) => setLevel(e.target.value)} style={{ maxWidth: 140 }}>
           <option value="">All</option>
           <option value="N5">N5</option>
           <option value="N4">N4</option>
           <option value="N3">N3</option>
           <option value="N2">N2</option>
           <option value="N1">N1</option>
-        </select>
+        </CustomSelect>
 
-        <select className="field" value={section} onChange={(e) => setSection(e.target.value)} style={{ maxWidth: 220 }}>
+        <CustomSelect value={section} onChange={(e) => setSection(e.target.value)} style={{ maxWidth: 220 }}>
           <option value="">All sections</option>
           <option value="kadai">kadai</option>
           <option value="point">point</option>
@@ -64,10 +64,10 @@ export function ListeningPage() {
           <option value="sokuji">sokuji</option>
           <option value="togo">togo</option>
           <option value="other">other</option>
-        </select>
+        </CustomSelect>
 
         {!plan.reduceChoiceNoise ? (
-          <select className="field" value={qtype} onChange={(e) => setQtype(e.target.value)} style={{ maxWidth: 220 }}>
+          <CustomSelect value={qtype} onChange={(e) => setQtype(e.target.value)} style={{ maxWidth: 220 }}>
             <option value="">All types</option>
             <option value="gist">gist</option>
             <option value="detail">detail</option>
@@ -75,7 +75,7 @@ export function ListeningPage() {
             <option value="purpose">purpose</option>
             <option value="response">response</option>
             <option value="other">other</option>
-          </select>
+          </CustomSelect>
         ) : null}
 
         <button className={showTranscripts ? "btn btn--active" : "btn"} onClick={() => setShowTranscripts((v) => !v)}>

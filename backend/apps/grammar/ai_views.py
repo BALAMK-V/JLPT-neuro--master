@@ -1,4 +1,4 @@
-"""AI-powered Japanese grammar checker using Claude."""
+"""AI-powered Japanese grammar checker using Google Gemini."""
 from __future__ import annotations
 
 import json
@@ -37,14 +37,29 @@ Rules:
 - corrected must be a full sentence, not a fragment
 - Return ONLY the JSON object — nothing else"""
 
+MOCK_RESPONSE = {
+    "is_correct": False,
+    "naturalness": "unnatural",
+    "corrected": "毎日日本語を勉強しています。",
+    "overall_comment": "Good effort! There is a small particle error, but the overall structure is clear.",
+    "errors": [
+        {
+            "fragment": "日本語を勉強する",
+            "correction": "日本語を勉強しています",
+            "explanation": "Use the て-form + います (〜ています) to express an ongoing habitual action.",
+        }
+    ],
+    "jlpt_points": ["〜ています", "毎日 + verb pattern"],
+}
+
 
 def _get_client():
-    api_key = getattr(settings, "ANTHROPIC_API_KEY", "") or ""
+    api_key = getattr(settings, "GEMINI_API_KEY", "") or ""
     if not api_key:
         return None
     try:
-        import anthropic
-        return anthropic.Anthropic(api_key=api_key)
+        from google import genai
+        return genai.Client(api_key=api_key)
     except ImportError:
         return None
 
@@ -72,12 +87,6 @@ class GrammarCheckView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request) -> Response:
-        if not getattr(settings, "ANTHROPIC_API_KEY", ""):
-            return Response(
-                {"detail": "AI grammar check is not configured. Add ANTHROPIC_API_KEY to .env."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
-
         sentence = (request.data.get("sentence") or "").strip()
         if not sentence:
             return Response({"detail": "sentence is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -86,27 +95,36 @@ class GrammarCheckView(APIView):
 
         jlpt_level = (request.data.get("jlpt_level") or "").strip() or "unknown"
 
+        if getattr(settings, "GEMINI_DEV_MOCK", False):
+            logger.info("Grammar check: using dev mock response")
+            return Response({"sentence": sentence, **MOCK_RESPONSE})
+
+        if not getattr(settings, "GEMINI_API_KEY", ""):
+            return Response(
+                {"detail": "AI grammar check is not configured. Add GEMINI_API_KEY to .env."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
         client = _get_client()
         if client is None:
-            return Response({"detail": "anthropic package not installed."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return Response({"detail": "google-genai package not installed."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        from google.genai import types
 
         user_msg = f"Student JLPT level: {jlpt_level}\n\nSentence to check:\n{sentence}"
+        model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash-lite")
 
         try:
-            import anthropic
-            model = getattr(settings, "ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
-            message = client.messages.create(
-                model=model,
-                max_tokens=800,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_msg}],
+            response = client.models.generate_content(
+                model=model_name,
+                contents=user_msg,
+                config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT),
             )
-            raw = message.content[0].text if message.content else "{}"
+            raw = response.text if response.text else "{}"
             result = _parse_json(raw)
             if not result:
                 return Response({"detail": "AI returned unexpected format."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             return Response({"sentence": sentence, **result})
-
-        except anthropic.APIError as exc:
+        except Exception as exc:
             logger.error("Grammar check API error: %s", exc)
             return Response({"detail": f"AI request failed: {exc}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

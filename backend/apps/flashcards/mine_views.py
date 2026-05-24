@@ -1,4 +1,4 @@
-"""Sentence Mining — Claude extracts unknown words from pasted Japanese text and creates flashcards."""
+"""Sentence Mining — Gemini extracts unknown words from pasted Japanese text and creates flashcards."""
 from __future__ import annotations
 
 import json
@@ -40,14 +40,22 @@ Rules:
 - Include only words, not grammar particles or conjunctions
 - Return ONLY the JSON array"""
 
+MOCK_WORDS = [
+    {"word": "環境", "reading": "かんきょう", "meaning": "environment", "example_jp": "環境問題は深刻です。", "example_en": "Environmental issues are serious."},
+    {"word": "影響", "reading": "えいきょう", "meaning": "influence; impact", "example_jp": "天気は気分に影響する。", "example_en": "Weather affects your mood."},
+    {"word": "解決", "reading": "かいけつ", "meaning": "resolution; solution", "example_jp": "問題を解決する方法を探している。", "example_en": "I am looking for a way to solve the problem."},
+    {"word": "経験", "reading": "けいけん", "meaning": "experience", "example_jp": "海外での経験が役に立った。", "example_en": "My experience abroad was useful."},
+    {"word": "目標", "reading": "もくひょう", "meaning": "goal; target", "example_jp": "N2合格が今年の目標です。", "example_en": "Passing N2 is my goal this year."},
+]
+
 
 def _get_client():
-    api_key = getattr(settings, "ANTHROPIC_API_KEY", "") or ""
+    api_key = getattr(settings, "GEMINI_API_KEY", "") or ""
     if not api_key:
         return None
     try:
-        import anthropic
-        return anthropic.Anthropic(api_key=api_key)
+        from google import genai
+        return genai.Client(api_key=api_key)
     except ImportError:
         return None
 
@@ -79,12 +87,6 @@ class SentenceMineView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request) -> Response:
-        if not getattr(settings, "ANTHROPIC_API_KEY", ""):
-            return Response(
-                {"detail": "Sentence mining not configured. Add ANTHROPIC_API_KEY to .env."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
-
         text = (request.data.get("text") or "").strip()
         deck_id = request.data.get("deck_id")
         jlpt_level = (request.data.get("jlpt_level") or "N3").strip()
@@ -94,7 +96,6 @@ class SentenceMineView(APIView):
         if len(text) > 3000:
             return Response({"detail": "text too long (max 3000 characters)."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validate deck ownership if provided
         deck = None
         if deck_id:
             try:
@@ -102,30 +103,39 @@ class SentenceMineView(APIView):
             except Deck.DoesNotExist:
                 return Response({"detail": "Deck not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        client = _get_client()
-        if client is None:
-            return Response({"detail": "anthropic package not installed."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        if getattr(settings, "GEMINI_DEV_MOCK", False):
+            logger.info("Sentence mining: using dev mock response")
+            words = MOCK_WORDS
+        else:
+            if not getattr(settings, "GEMINI_API_KEY", ""):
+                return Response(
+                    {"detail": "Sentence mining not configured. Add GEMINI_API_KEY to .env."},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
 
-        user_msg = f"Student JLPT level: {jlpt_level}\n\nJapanese text to mine:\n{text}"
-        model = getattr(settings, "ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
+            client = _get_client()
+            if client is None:
+                return Response({"detail": "google-genai package not installed."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-        try:
-            import anthropic
-            message = client.messages.create(
-                model=model,
-                max_tokens=2000,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_msg}],
-            )
-        except anthropic.APIError as exc:
-            logger.error("Sentence mining API error: %s", exc)
-            return Response({"detail": f"AI request failed: {exc}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            from google.genai import types
 
-        raw = message.content[0].text if message.content else "[]"
-        words = _parse_json_array(raw)
+            user_msg = f"Student JLPT level: {jlpt_level}\n\nJapanese text to mine:\n{text}"
+            model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash-lite")
 
-        if not words:
-            return Response({"detail": "AI returned no words."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=user_msg,
+                    config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT),
+                )
+                raw = response.text if response.text else "[]"
+            except Exception as exc:
+                logger.error("Sentence mining API error: %s", exc)
+                return Response({"detail": f"AI request failed: {exc}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            words = _parse_json_array(raw)
+            if not words:
+                return Response({"detail": "AI returned no words."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         cards_created = 0
         if deck:
@@ -150,7 +160,6 @@ class SentenceMineView(APIView):
                         back_parts.append(f"({example_en})")
 
                     try:
-                        # Match to a Vocabulary object if it exists
                         vocab_obj = Vocabulary.objects.filter(word=word).first()
                         Card.objects.create(
                             deck=deck,
@@ -161,7 +170,7 @@ class SentenceMineView(APIView):
                         )
                         cards_created += 1
                     except Exception:
-                        pass  # Skip duplicates or integrity errors
+                        pass
 
         return Response({
             "words_found": len(words),

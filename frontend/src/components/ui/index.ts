@@ -1,3 +1,4 @@
+export { CustomSelect } from "./CustomSelect";
 export { Heading, Label, Caption, Meta } from "./Text";
 export { VStack, HStack } from "./Stack";
 export { Badge } from "./Badge";
